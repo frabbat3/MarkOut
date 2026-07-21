@@ -301,7 +301,7 @@ body {
 
 /* ─── FOOTER ─── */
 .site-footer {
-  background: #1f1f1f;
+  background: #1a73e8;
   padding: 20px 0;
 }
 
@@ -329,7 +329,7 @@ body {
 
 .footer-brand {
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.3px;
 }

@@ -25,11 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     uploadArea.classList.add('dragover');
   });
-
   uploadArea.addEventListener('dragleave', () => {
     uploadArea.classList.remove('dragover');
   });
-
   uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadArea.classList.remove('dragover');
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
       copyBtn.textContent = '✅ Copiato!';
       setTimeout(() => { copyBtn.textContent = '📋 Copia'; }, 2000);
     } catch {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = lastMarkdown;
       document.body.appendChild(ta);
@@ -79,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ─── Gestione file ─── */
   function handleFile(file) {
-    // Reset UI
     hideAll();
     loading.classList.remove('hidden');
 
@@ -103,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsArrayBuffer(file);
   }
 
-  /* ─── Nascondi sezioni ─── */
+  /* ─── Utility UI ─── */
   function hideAll() {
     loading.classList.add('hidden');
     result.classList.add('hidden');
@@ -117,9 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     error.classList.remove('hidden');
   }
 
-  /* ═══════════════════════════════════════════════
-     ESTRATTO: mostra risultati
-     ═══════════════════════════════════════════════ */
   function showResults(highlights, fileName) {
     hideAll();
 
@@ -128,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Costruisci Markdown
     let md = `# Testo evidenziato\n\n`;
     md += `> Estratto da: **${fileName}**  \n`;
     md += `> Frammenti evidenziati: **${highlights.length}**\n\n`;
@@ -143,87 +135,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lastMarkdown = md;
 
-    // Meta
     const wordCount = highlights.reduce((sum, h) => sum + h.split(/\s+/).length, 0);
     resultMeta.textContent = `${highlights.length} evidenziature · ${wordCount} parole · elaborato localmente nel browser`;
 
     markdownOut.textContent = md;
     result.classList.remove('hidden');
-
-    // Scroll to result
     result.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   /* ═══════════════════════════════════════════════
-     PDF HIGHLIGHT EXTRACTION
+     PDF HIGHLIGHT EXTRACTION — CORE
      ═══════════════════════════════════════════════ */
   async function extractHighlights(pdfData) {
     const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+    const totalPages = pdf.numPages;
     const allHighlights = [];
+    let totalAnnotations = 0;
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
+
+      // Ottieni annotazioni e contenuto testuale in parallelo
       const [annotations, textContent] = await Promise.all([
         page.getAnnotations(),
         page.getTextContent()
       ]);
 
-      // Filtra solo annotazioni di tipo "Highlight"
-      const highlightAnnots = annotations.filter(a => a.subtype === 'Highlight');
+      totalAnnotations += annotations.length;
+
+      // Filtra annotazioni di tipo "Highlight"
+      // subtype === "Highlight" (stringa)  OPPURE  annotationType === 9 (numero)
+      const highlightAnnots = annotations.filter(a =>
+        a.subtype === 'Highlight' || a.annotationType === 9
+      );
+
       if (highlightAnnots.length === 0) continue;
 
-      // Prepara bounding box del testo
+      // Prepara bounding box del testo in coordinate PDF (y ↑)
       const textItems = textContent.items.map(item => {
-        const [a, b, c, d, e, f] = item.transform;
-        const fontSize = Math.sqrt(a * a + b * b) || 12;
-        const height = fontSize;
+        const [a, , , d, e, f] = item.transform;
+        const fontSize = Math.sqrt(a * a + d * d) || 12;
+        const width = item.width || (fontSize * item.str.length * 0.55);
         return {
           str: item.str,
-          // Bbox in user space (y up)
+          // Bbox approssimativo in user space
           bbox: {
             x1: e,
-            y1: f - height * 0.25,          // un po' sotto la baseline
-            x2: e + (item.width || fontSize * item.str.length * 0.5),
-            y2: f + height * 0.85            // un po' sopra il cap height
+            y1: f - fontSize * 0.3,
+            x2: e + width,
+            y2: f + fontSize * 0.9
           },
-          // Per ordinamento
           y: f,
-          x: e
+          x: e,
+          fontSize
         };
       });
 
-      // Per ogni evidenziatura, trova il testo corrispondente
+      // Per ogni evidenziatura, estrai il testo corrispondente
       for (const annot of highlightAnnots) {
-        // Usa quadPoints se disponibili (più precisi), altrimenti rect
-        let regions = [];
-
-        if (annot.quadPoints && annot.quadPoints.length > 0) {
-          // Ogni quad ha 8 numeri: x1,y1, x2,y2, x3,y3, x4,y4
-          for (let i = 0; i < annot.quadPoints.length; i += 8) {
-            const q = annot.quadPoints.slice(i, i + 8);
-            const xs = [q[0], q[2], q[4], q[6]];
-            const ys = [q[1], q[3], q[5], q[7]];
-            regions.push({
-              x1: Math.min(...xs),
-              y1: Math.min(...ys),
-              x2: Math.max(...xs),
-              y2: Math.max(...ys)
-            });
-          }
-        } else if (annot.rect) {
-          regions.push({
-            x1: Math.min(annot.rect[0], annot.rect[2]),
-            y1: Math.min(annot.rect[1], annot.rect[3]),
-            x2: Math.max(annot.rect[0], annot.rect[2]),
-            y2: Math.max(annot.rect[1], annot.rect[3])
-          });
-        }
-
+        // Ottieni le regioni (quadPoints o rect)
+        const regions = getAnnotationRegions(annot);
         if (regions.length === 0) continue;
 
-        // Raccogli i text item che cadono nelle regioni evidenziate
         const matchedTexts = new Set();
-
         for (const region of regions) {
           for (const item of textItems) {
             if (rectsOverlap(item.bbox, region)) {
@@ -233,26 +207,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (matchedTexts.size > 0) {
-          // Ordina per posizione (dall'alto verso il basso, poi da sinistra a destra)
           const sorted = Array.from(matchedTexts).sort((a, b) => {
-            // In user space, y maggiore = più in alto
+            // In user space y maggiore = più in alto
             const dy = b.y - a.y;
-            if (Math.abs(dy) > 5) return dy;
+            if (Math.abs(dy) > fontSizeThreshold(a, b)) return dy;
             return a.x - b.x;
           });
 
-          const text = sorted.map(t => t.str).join(' ').replace(/\s+/g, ' ').trim();
-          if (text) {
-            allHighlights.push(text);
-          }
+          const text = sorted.map(t => t.str).join('').replace(/\s+/g, ' ').trim();
+          if (text) allHighlights.push(text);
         }
       }
     }
 
+    // Debug info in console
+    console.log(`📄 MarkOut: ${totalPages} pagine, ${totalAnnotations} annotazioni totali, ${allHighlights.length} evidenziature estratte`);
+
     return allHighlights;
   }
 
-  /* ─── Overlap test tra due rettangoli (user space, y up) ─── */
+  /* ─── Estrae le regioni (rettangoli) da una annotazione ─── */
+  function getAnnotationRegions(annot) {
+    const regions = [];
+
+    // 1) Prova con quadPoints (più precisi)
+    if (annot.quadPoints && annot.quadPoints.length > 0) {
+      // PDF.js può restituire quadPoints in due formati:
+      // - Array di array: [[x1,y1,x2,y2,x3,y3,x4,y4], ...]
+      // - Array piatto:  [x1,y1,x2,y2,x3,y3,x4,y4, ...]
+      const first = annot.quadPoints[0];
+      let quads;
+
+      if (Array.isArray(first)) {
+        // Formato nidificato: [[x1,y1,...], [x2,y2,...]]
+        quads = annot.quadPoints;
+      } else {
+        // Formato piatto: [x1,y1,x2,y2,...]
+        quads = [];
+        for (let i = 0; i < annot.quadPoints.length; i += 8) {
+          quads.push(annot.quadPoints.slice(i, i + 8));
+        }
+      }
+
+      for (const q of quads) {
+        // q ha 8 numeri: x1,y1, x2,y2, x3,y3, x4,y4
+        const xs = [q[0], q[2], q[4], q[6]];
+        const ys = [q[1], q[3], q[5], q[7]];
+        regions.push({
+          x1: Math.min(...xs),
+          y1: Math.min(...ys),
+          x2: Math.max(...xs),
+          y2: Math.max(...ys)
+        });
+      }
+    }
+
+    // 2) Fallback su rect (meno preciso ma sempre disponibile)
+    if (regions.length === 0 && annot.rect) {
+      regions.push({
+        x1: Math.min(annot.rect[0], annot.rect[2]),
+        y1: Math.min(annot.rect[1], annot.rect[3]),
+        x2: Math.max(annot.rect[0], annot.rect[2]),
+        y2: Math.max(annot.rect[1], annot.rect[3])
+      });
+    }
+
+    return regions;
+  }
+
+  /* ─── Soglia di fontSize per ordinamento righe ─── */
+  function fontSizeThreshold(a, b) {
+    return Math.min(a.fontSize, b.fontSize) * 0.5;
+  }
+
+  /* ─── Overlap test tra due rettangoli (user space, y ↑) ─── */
   function rectsOverlap(a, b) {
     return a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
   }
