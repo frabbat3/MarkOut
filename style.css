@@ -91,13 +91,7 @@ body {
 .header-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .header-right { display: flex; align-items: center; gap: 12px; }
 
-.logo-icon { width: 36px; height: 36px; flex-shrink: 0; }
-
-/* Logo: image.svg (chiaro) / gemini-svg.svg (scuro) */
-html:not([data-theme="dark"]) .logo-light { display: block; }
-html:not([data-theme="dark"]) .logo-dark  { display: none; }
-html[data-theme="dark"] .logo-light { display: none; }
-html[data-theme="dark"] .logo-dark  { display: block; }
+.logo-icon { width: 36px; height: 36px; display: block; flex-shrink: 0; }
 
 .brand-name {
   font-size: 1.4rem; font-weight: 700;
