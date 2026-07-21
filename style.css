@@ -93,6 +93,12 @@ body {
 
 .logo-icon { width: 36px; height: 36px; display: block; flex-shrink: 0; }
 
+/* Logo scambia in base al tema */
+.logo-light { display: block; }
+.logo-dark  { display: none; }
+html[data-theme="dark"] .logo-light { display: none; }
+html[data-theme="dark"] .logo-dark  { display: block; }
+
 .brand-name {
   font-size: 1.4rem; font-weight: 700;
   color: var(--brand-text); letter-spacing: -0.5px;
@@ -208,16 +214,40 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 
 /* ─── FOOTER ─── */
 .site-footer {
-  background: var(--footer-bg); padding: 20px 0;
+  background: var(--footer-bg); padding: 32px 0;
   transition: background 0.3s;
 }
 .footer-inner {
   max-width: 1100px; margin: 0 auto; padding: 0 24px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: flex-start; justify-content: space-between;
 }
-.footer-left { display: flex; align-items: center; }
-.gemini-icon { width: 36px; height: 36px; display: block; opacity: 0.9; border-radius: 4px; }
-.footer-brand { font-size: 1.1rem; font-weight: 700; color: #ffffff; letter-spacing: -0.3px; }
+.footer-left {
+  display: flex; align-items: center; gap: 12px;
+}
+.footer-logo {
+  width: 36px; height: 36px; display: block;
+  filter: brightness(0) invert(1); opacity: 0.85;
+}
+.footer-brand {
+  font-size: 1.2rem; font-weight: 700;
+  color: #ffffff; letter-spacing: -0.3px;
+}
+.footer-right {
+  display: flex; gap: 60px;
+}
+.footer-links {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.footer-heading {
+  font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.6);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+}
+.footer-links a {
+  color: rgba(255,255,255,0.8); text-decoration: none;
+  font-size: 0.9rem; font-weight: 400;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: #ffffff; }
 
 /* ─── BUTTONS ─── */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background 0.2s, transform 0.15s; }
@@ -239,7 +269,8 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   .hero-sub { font-size: 0.95rem; }
   .steps { grid-template-columns: 1fr; gap: 24px; }
   .result-header { flex-direction: column; align-items: flex-start; }
-  .upload-area { padding: 32px 16px; }
+  .footer-inner { flex-direction: column; gap: 24px; }
+  .footer-right { gap: 32px; }
 }
 @media (max-width: 480px) {
   .nav-link { padding: 6px 5px; font-size: 0.7rem; }
