@@ -4,6 +4,36 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  /* ─── Theme Toggle ─── */
+  const themeToggle = document.getElementById('themeToggle');
+  const iconLight = themeToggle.querySelector('.icon-light');
+  const iconDark = themeToggle.querySelector('.icon-dark');
+
+  // Leggi preferenza salvata
+  const savedTheme = localStorage.getItem('markout-theme') || 'light';
+  applyTheme(savedTheme);
+
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('markout-theme', next);
+  });
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      iconLight.classList.add('hidden');
+      iconDark.classList.remove('hidden');
+      themeToggle.setAttribute('aria-label', 'Attiva tema chiaro');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      iconLight.classList.remove('hidden');
+      iconDark.classList.add('hidden');
+      themeToggle.setAttribute('aria-label', 'Attiva tema scuro');
+    }
+  }
+
   /* ─── Elementi DOM ─── */
   const uploadArea   = document.getElementById('uploadArea');
   const fileInput    = document.getElementById('fileInput');
