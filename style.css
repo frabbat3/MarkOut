@@ -220,7 +220,7 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 }
 .footer-logo {
   width: 36px; height: 36px; display: block;
-  border-radius: 4px;
+  filter: brightness(0) invert(1); opacity: 0.9;
 }
 .footer-brand {
   font-size: 1.2rem; font-weight: 700;
@@ -255,18 +255,58 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 .hidden { display: none !important; }
 
 /* ─── RESPONSIVE ─── */
-@media (max-width: 700px) {
-  .header-inner { padding: 0 16px; }
+@media (max-width: 768px) {
+  .header-inner { padding: 0 12px; height: 56px; }
   .brand-name { font-size: 1.1rem; }
-  .nav-link { padding: 6px 8px; font-size: 0.75rem; }
+  .logo-icon { width: 30px; height: 30px; }
+  .header-nav { gap: 0; }
+  .nav-link { padding: 6px 8px; font-size: 0.78rem; }
+  .theme-toggle { width: 34px; height: 34px; font-size: 1rem; }
+
+  .hero { padding: 40px 0 30px; }
   .hero h1 { font-size: 1.6rem; }
   .hero-sub { font-size: 0.95rem; }
+
+  .upload-area { padding: 36px 16px; }
+  .upload-icon { font-size: 2.4rem; }
+
+  .how-it-works { padding: 40px 0; }
+  .how-it-works h2 { font-size: 1.4rem; margin-bottom: 30px; }
   .steps { grid-template-columns: 1fr; gap: 24px; }
+
   .result-header { flex-direction: column; align-items: flex-start; }
-  .footer-inner { flex-direction: column; gap: 24px; }
+  .markdown-output { max-height: 350px; font-size: 0.8rem; padding: 16px; }
+
+  .site-footer { padding: 24px 0; }
+  .footer-inner { flex-direction: column; gap: 20px; align-items: flex-start; }
   .footer-right { gap: 32px; }
+  .footer-heading { font-size: 0.75rem; }
+  .footer-links a { font-size: 0.85rem; }
 }
+
 @media (max-width: 480px) {
-  .nav-link { padding: 6px 5px; font-size: 0.7rem; }
-  .theme-toggle { width: 36px; height: 36px; font-size: 1rem; }
+  .header-inner { gap: 6px; }
+  .header-left { gap: 6px; }
+  .header-right { gap: 4px; }
+  .brand-name { font-size: 1rem; }
+  .header-nav { gap: 0; }
+  .nav-link { padding: 6px 5px; font-size: 0.7rem; border-radius: 6px; }
+  .theme-toggle { width: 32px; height: 32px; font-size: 0.95rem; }
+
+  .hero h1 { font-size: 1.35rem; }
+  .hero-sub { font-size: 0.85rem; }
+  .container { padding: 0 14px; }
+
+  .upload-area { padding: 28px 12px; border-radius: 12px; }
+  .upload-text { font-size: 0.95rem; }
+  .upload-icon { font-size: 2rem; }
+
+  .result-header h2 { font-size: 1rem; }
+  .btn-sm { padding: 8px 14px; font-size: 0.8rem; }
+
+  .step-num { width: 40px; height: 40px; font-size: 1.1rem; }
+  .step h3 { font-size: 0.95rem; }
+  .step p { font-size: 0.85rem; }
+
+  .footer-links a { font-size: 0.8rem; }
 }
