@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MarkOut - Estrai evidenziato da PDF</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
   <!-- PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
@@ -28,8 +28,8 @@
           <a href="#" class="nav-link">Contatti</a>
         </nav>
         <button class="theme-toggle" id="themeToggle" aria-label="Attiva tema scuro">
-          <span class="icon-light">☀️</span>
-          <span class="icon-dark hidden">🌙</span>
+          <span class="icon icon-sun">☀️</span>
+          <span class="icon icon-moon">🌙</span>
         </button>
       </div>
     </div>
@@ -51,20 +51,20 @@
       <div class="upload-area" id="uploadArea">
         <div class="upload-icon">📄</div>
         <p class="upload-text"><strong>Clicca qui</strong> o trascina un PDF</p>
-        <p class="upload-hint">Il file viene elaborato interamente sul tuo browser — nessun dato viene inviato a server</p>
+        <p class="upload-hint">Il file viene elaborato interamente sul tuo browser — nessun dato inviato a server</p>
         <input type="file" id="fileInput" accept=".pdf" hidden>
       </div>
 
       <!-- Loading -->
       <div class="loading hidden" id="loading">
         <div class="spinner"></div>
-        <p>Estrazione in corso…</p>
+        <p>Analizzo il PDF e trovo le evidenziazioni…</p>
       </div>
 
       <!-- Risultato -->
       <div class="result hidden" id="result">
         <div class="result-header">
-          <h2>Testo evidenziato estratto</h2>
+          <h2>Evidenziazioni trovate</h2>
           <div class="result-actions">
             <button class="btn btn-sm" id="copyBtn">📋 Copia</button>
             <button class="btn btn-sm" id="downloadBtn">⬇ Scarica .md</button>
@@ -74,10 +74,10 @@
         <pre class="markdown-output" id="markdownOutput"></pre>
       </div>
 
-      <!-- Nessun evidenziato trovato -->
+      <!-- Nessun evidenziato -->
       <div class="no-highlights hidden" id="noHighlights">
-        <p>😕 Nessun testo evidenziato trovato in questo PDF.</p>
-        <p class="hint">Assicurati che il PDF contenga delle <strong>evidenziature (highlight)</strong> salvate come annotazioni.</p>
+        <p>😕 Nessuna evidenziazione trovata in questo PDF.</p>
+        <p class="hint">Assicurati che il PDF contenga evidenziazioni <strong>gialle</strong> salvate come annotazioni (Adobe Acrobat, Preview, Edge, …)</p>
       </div>
 
       <!-- Errore -->
@@ -96,16 +96,16 @@
         <div class="step">
           <div class="step-num">1</div>
           <h3>Carica il PDF</h3>
-          <p>Trascina o seleziona un file PDF con delle evidenziature.</p>
+          <p>Trascina o seleziona un PDF con evidenziature gialle.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <h3>Estrazione automatica</h3>
-          <p>Il tool analizza il PDF e trova tutto il testo evidenziato.</p>
+          <h3>Estrazione</h3>
+          <p>Il tool analizza le annotazioni e trova il testo evidenziato.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <h3>Ottieni il Markdown</h3>
+          <h3>Markdown</h3>
           <p>Copia o scarica il risultato in formato Markdown.</p>
         </div>
       </div>
@@ -124,6 +124,6 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=2"></script>
 </body>
 </html>

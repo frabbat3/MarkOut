@@ -1,40 +1,29 @@
-/* ═══════════════════════════════════════════════
-   MarkOut — Estrazione testo evidenziato da PDF
-   ═══════════════════════════════════════════════ */
-
-document.addEventListener('DOMContentLoaded', () => {
+/**
+ * MarkOut — Estrazione evidenziazioni da PDF (basato su logica Holo v2.0 funzionante)
+ */
+(function () {
+  'use strict';
 
   /* ─── Theme Toggle ─── */
   const themeToggle = document.getElementById('themeToggle');
-  const iconLight = themeToggle.querySelector('.icon-light');
-  const iconDark = themeToggle.querySelector('.icon-dark');
+  const html = document.documentElement;
 
-  // Leggi preferenza salvata
-  const savedTheme = localStorage.getItem('markout-theme') || 'light';
-  applyTheme(savedTheme);
-
-  themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    localStorage.setItem('markout-theme', next);
-  });
-
-  function applyTheme(theme) {
-    if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      iconLight.classList.add('hidden');
-      iconDark.classList.remove('hidden');
-      themeToggle.setAttribute('aria-label', 'Attiva tema chiaro');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      iconLight.classList.remove('hidden');
-      iconDark.classList.add('hidden');
-      themeToggle.setAttribute('aria-label', 'Attiva tema scuro');
-    }
+  // Ripristina preferenza da localStorage
+  if (localStorage.getItem('markout-theme') === 'dark') {
+    html.setAttribute('data-theme', 'dark');
   }
 
-  /* ─── Elementi DOM ─── */
+  themeToggle.addEventListener('click', function () {
+    if (html.hasAttribute('data-theme')) {
+      html.removeAttribute('data-theme');
+      localStorage.setItem('markout-theme', 'light');
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      localStorage.setItem('markout-theme', 'dark');
+    }
+  });
+
+  /* ─── DOM refs ─── */
   const uploadArea   = document.getElementById('uploadArea');
   const fileInput    = document.getElementById('fileInput');
   const loading      = document.getElementById('loading');
@@ -47,271 +36,272 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyBtn      = document.getElementById('copyBtn');
   const downloadBtn  = document.getElementById('downloadBtn');
 
-  /* ─── Upload: click ─── */
-  uploadArea.addEventListener('click', () => fileInput.click());
+  let currentFile = null;
+  let currentHighlights = [];
 
-  /* ─── Upload: drag & drop ─── */
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('dragover');
-  });
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('dragover');
-  });
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  });
+  /* ─── Helpers ─── */
+  const fmtDate = () => new Date().toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'numeric' });
 
-  /* ─── Upload: file input ─── */
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) handleFile(fileInput.files[0]);
-  });
+  const esc = function (s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  };
 
-  /* ─── Copia / Scarica ─── */
-  let lastMarkdown = '';
-
-  copyBtn.addEventListener('click', async () => {
-    if (!lastMarkdown) return;
-    try {
-      await navigator.clipboard.writeText(lastMarkdown);
-      copyBtn.textContent = '✅ Copiato!';
-      setTimeout(() => { copyBtn.textContent = '📋 Copia'; }, 2000);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = lastMarkdown;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-      copyBtn.textContent = '✅ Copiato!';
-      setTimeout(() => { copyBtn.textContent = '📋 Copia'; }, 2000);
-    }
-  });
-
-  downloadBtn.addEventListener('click', () => {
-    if (!lastMarkdown) return;
-    const blob = new Blob([lastMarkdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'estratto-evidenziato.md';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  });
-
-  /* ─── Gestione file ─── */
-  function handleFile(file) {
-    hideAll();
-    loading.classList.remove('hidden');
-
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      showError('Il file selezionato non è un PDF valido.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const pdfData = new Uint8Array(e.target.result);
-        const highlights = await extractHighlights(pdfData);
-        showResults(highlights, file.name);
-      } catch (err) {
-        console.error(err);
-        showError('Errore durante l\'elaborazione del PDF: ' + err.message);
-      }
-    };
-    reader.onerror = () => showError('Errore nella lettura del file.');
-    reader.readAsArrayBuffer(file);
-  }
-
-  /* ─── Utility UI ─── */
-  function hideAll() {
+  const hideAll = function () {
     loading.classList.add('hidden');
     result.classList.add('hidden');
     noHighlights.classList.add('hidden');
     error.classList.add('hidden');
+  };
+
+  /* ─── Upload UI ─── */
+  uploadArea.addEventListener('click', function () { fileInput.click(); });
+
+  uploadArea.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+  uploadArea.addEventListener('dragleave', function () {
+    uploadArea.classList.remove('dragover');
+  });
+  uploadArea.addEventListener('drop', function (e) {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    var f = e.dataTransfer.files[0];
+    if (f) processFile(f);
+  });
+
+  fileInput.addEventListener('change', function () {
+    var f = this.files[0];
+    if (f) processFile(f);
+    this.value = '';
+  });
+
+  /* ─── Copia / Scarica ─── */
+  copyBtn.addEventListener('click', async function () {
+    if (!currentFile || !currentHighlights.length) return;
+    var txt = buildMarkdown(currentHighlights, currentFile.name);
+    try {
+      await navigator.clipboard.writeText(txt);
+    } catch (ex) {
+      var ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    copyBtn.textContent = '✅ Copiato!';
+    setTimeout(function () { copyBtn.textContent = '📋 Copia'; }, 2000);
+  });
+
+  downloadBtn.addEventListener('click', function () {
+    if (!currentFile || !currentHighlights.length) return;
+    var txt = buildMarkdown(currentHighlights, currentFile.name);
+    var blob = new Blob([txt], { type: 'text/markdown;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (currentFile.name || 'doc').replace(/\.pdf$/i, '') + '-evidenziazioni.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  /* ─── Elabora file ─── */
+  function processFile(f) {
+    hideAll();
+    if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
+      showError('Il file selezionato non è un PDF valido.');
+      return;
+    }
+    currentFile = f;
+    currentHighlights = [];
+    loading.classList.remove('hidden');
+
+    var reader = new FileReader();
+    reader.onload = async function (e) {
+      try {
+        var buf = new Uint8Array(e.target.result);
+        var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        currentHighlights = await extractHighlights(pdf);
+        pdf.destroy();
+        showResult();
+      } catch (err) {
+        console.error('MarkOut error:', err);
+        loading.classList.add('hidden');
+        showError(err.message || 'Impossibile leggere il PDF.');
+      }
+    };
+    reader.onerror = function () {
+      loading.classList.add('hidden');
+      showError('Errore nella lettura del file.');
+    };
+    reader.readAsArrayBuffer(f);
   }
 
-  function showError(msg) {
-    hideAll();
-    errorMsg.textContent = msg;
-    error.classList.remove('hidden');
-  }
-
-  function showResults(highlights, fileName) {
-    hideAll();
-
-    if (highlights.length === 0) {
+  function showResult() {
+    loading.classList.add('hidden');
+    if (!currentHighlights.length) {
       noHighlights.classList.remove('hidden');
       return;
     }
-
-    let md = `# Testo evidenziato\n\n`;
-    md += `> Estratto da: **${fileName}**  \n`;
-    md += `> Frammenti evidenziati: **${highlights.length}**\n\n`;
-    md += `---\n\n`;
-
-    highlights.forEach((h, i) => {
-      md += `## ${i + 1}. Evidenziato\n\n`;
-      md += `> ${h}\n\n`;
-    });
-
-    md += `---\n\n*Generato con MarkOut il ${new Date().toLocaleDateString('it-IT')}*`;
-
-    lastMarkdown = md;
-
-    const wordCount = highlights.reduce((sum, h) => sum + h.split(/\s+/).length, 0);
-    resultMeta.textContent = `${highlights.length} evidenziature · ${wordCount} parole · elaborato localmente nel browser`;
-
-    markdownOut.textContent = md;
+    var mdText = buildMarkdown(currentHighlights, currentFile.name);
+    var pages = new Set(currentHighlights.map(function (h) { return h.page; }));
+    resultMeta.textContent = currentHighlights.length + ' evidenziazioni · ' + pages.size + ' pagine — ' + currentFile.name;
+    markdownOut.textContent = mdText;
     result.classList.remove('hidden');
     result.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  /* ═══════════════════════════════════════════════
-     PDF HIGHLIGHT EXTRACTION — CORE
-     ═══════════════════════════════════════════════ */
-  async function extractHighlights(pdfData) {
-    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-    const totalPages = pdf.numPages;
-    const allHighlights = [];
-    let totalAnnotations = 0;
-
-    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-
-      // Ottieni annotazioni e contenuto testuale in parallelo
-      const [annotations, textContent] = await Promise.all([
-        page.getAnnotations(),
-        page.getTextContent()
-      ]);
-
-      totalAnnotations += annotations.length;
-
-      // Filtra annotazioni di tipo "Highlight"
-      // subtype === "Highlight" (stringa)  OPPURE  annotationType === 9 (numero)
-      const highlightAnnots = annotations.filter(a =>
-        a.subtype === 'Highlight' || a.annotationType === 9
-      );
-
-      if (highlightAnnots.length === 0) continue;
-
-      // Prepara bounding box del testo in coordinate PDF (y ↑)
-      const textItems = textContent.items.map(item => {
-        const [a, , , d, e, f] = item.transform;
-        const fontSize = Math.sqrt(a * a + d * d) || 12;
-        const width = item.width || (fontSize * item.str.length * 0.55);
-        return {
-          str: item.str,
-          // Bbox approssimativo in user space
-          bbox: {
-            x1: e,
-            y1: f - fontSize * 0.3,
-            x2: e + width,
-            y2: f + fontSize * 0.9
-          },
-          y: f,
-          x: e,
-          fontSize
-        };
-      });
-
-      // Per ogni evidenziatura, estrai il testo corrispondente
-      for (const annot of highlightAnnots) {
-        // Ottieni le regioni (quadPoints o rect)
-        const regions = getAnnotationRegions(annot);
-        if (regions.length === 0) continue;
-
-        const matchedTexts = new Set();
-        for (const region of regions) {
-          for (const item of textItems) {
-            if (rectsOverlap(item.bbox, region)) {
-              matchedTexts.add(item);
-            }
-          }
-        }
-
-        if (matchedTexts.size > 0) {
-          const sorted = Array.from(matchedTexts).sort((a, b) => {
-            // In user space y maggiore = più in alto
-            const dy = b.y - a.y;
-            if (Math.abs(dy) > fontSizeThreshold(a, b)) return dy;
-            return a.x - b.x;
-          });
-
-          const text = sorted.map(t => t.str).join('').replace(/\s+/g, ' ').trim();
-          if (text) allHighlights.push(text);
-        }
-      }
-    }
-
-    // Debug info in console
-    console.log(`📄 MarkOut: ${totalPages} pagine, ${totalAnnotations} annotazioni totali, ${allHighlights.length} evidenziature estratte`);
-
-    return allHighlights;
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    error.classList.remove('hidden');
   }
 
-  /* ─── Estrae le regioni (rettangoli) da una annotazione ─── */
-  function getAnnotationRegions(annot) {
-    const regions = [];
+  /* ═══════════════════════════════════════════════
+     PDF HIGHLIGHT EXTRACTION — logica da Holo v2.0
+     ═══════════════════════════════════════════════ */
 
-    // 1) Prova con quadPoints (più precisi)
-    if (annot.quadPoints && annot.quadPoints.length > 0) {
-      // PDF.js può restituire quadPoints in due formati:
-      // - Array di array: [[x1,y1,x2,y2,x3,y3,x4,y4], ...]
-      // - Array piatto:  [x1,y1,x2,y2,x3,y3,x4,y4, ...]
-      const first = annot.quadPoints[0];
-      let quads;
+  function isHighlight(a) {
+    return a.subtype === 'Highlight';
+  }
 
-      if (Array.isArray(first)) {
-        // Formato nidificato: [[x1,y1,...], [x2,y2,...]]
-        quads = annot.quadPoints;
-      } else {
-        // Formato piatto: [x1,y1,x2,y2,...]
-        quads = [];
-        for (let i = 0; i < annot.quadPoints.length; i += 8) {
-          quads.push(annot.quadPoints.slice(i, i + 8));
-        }
-      }
+  /* Overlap tra due bbox (formato x0,y0 → x1,y1) */
+  function overlap(a, b) {
+    var ox = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0));
+    var oy = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+    return ox > 0 && oy > 0;
+  }
 
-      for (const q of quads) {
-        // q ha 8 numeri: x1,y1, x2,y2, x3,y3, x4,y4
-        const xs = [q[0], q[2], q[4], q[6]];
-        const ys = [q[1], q[3], q[5], q[7]];
-        regions.push({
-          x1: Math.min(...xs),
-          y1: Math.min(...ys),
-          x2: Math.max(...xs),
-          y2: Math.max(...ys)
+  /* Estrae testo da un'annotazione highlight */
+  function extractText(items, ann) {
+    // 1. Se l'annotazione ha "contents", usalo subito (molti PDF lo popolano)
+    if (ann.contents && ann.contents.trim()) {
+      return ann.contents.trim();
+    }
+
+    // 2. Estrai quadPoints o rect
+    var quads = [];
+    if (ann.quadPoints && ann.quadPoints.length >= 8) {
+      // quadPoints è un array piatto: [x1,y1,x2,y2,x3,y3,x4,y4, ...]
+      for (var i = 0; i < ann.quadPoints.length; i += 8) {
+        var q = ann.quadPoints.slice(i, i + 8);
+        quads.push({
+          x0: Math.min(q[0], q[2], q[4], q[6]),
+          y0: Math.min(q[1], q[3], q[5], q[7]),
+          x1: Math.max(q[0], q[2], q[4], q[6]),
+          y1: Math.max(q[1], q[3], q[5], q[7])
         });
       }
-    }
-
-    // 2) Fallback su rect (meno preciso ma sempre disponibile)
-    if (regions.length === 0 && annot.rect) {
-      regions.push({
-        x1: Math.min(annot.rect[0], annot.rect[2]),
-        y1: Math.min(annot.rect[1], annot.rect[3]),
-        x2: Math.max(annot.rect[0], annot.rect[2]),
-        y2: Math.max(annot.rect[1], annot.rect[3])
+    } else if (ann.rect && ann.rect.length >= 4) {
+      quads.push({
+        x0: ann.rect[0],
+        y0: ann.rect[1],
+        x1: ann.rect[2],
+        y1: ann.rect[3]
       });
     }
 
-    return regions;
+    if (!quads.length || !items.length) return '[testo]';
+
+    // 3. Trova text items che overlap con i quad
+    var matched = [];
+    for (var it = 0; it < items.length; it++) {
+      var item = items[it];
+      if (!item.str || !item.str.trim()) continue;
+      var tx = item.transform[4];
+      var ty = item.transform[5];
+      var tw = item.width || 1;
+      var th = item.height || item.fontSize || 12;
+      var itemBox = { x0: tx, y0: ty - th, x1: tx + tw, y1: ty };
+
+      for (var qi = 0; qi < quads.length; qi++) {
+        if (overlap(itemBox, quads[qi])) {
+          matched.push({ text: item.str, x: tx, y: ty, w: tw });
+          break;
+        }
+      }
+    }
+
+    if (!matched.length) return '[testo]';
+
+    // 4. Raggruppa per riga (Y approssimato a ±6 unità)
+    var lines = {};
+    for (var m = 0; m < matched.length; m++) {
+      var row = Math.round(matched[m].y / 6) * 6;
+      if (!lines[row]) lines[row] = [];
+      lines[row].push(matched[m]);
+    }
+
+    var result = [];
+    var sortedRows = Object.keys(lines).map(Number).sort(function (a, b) { return b - a; }); // Y alto → inizio pagina
+    for (var r = 0; r < sortedRows.length; r++) {
+      lines[sortedRows[r]].sort(function (a, b) { return a.x - b.x; }); // X crescente → sin→dx
+      var lineText = lines[sortedRows[r]].map(function (m) { return m.text; }).join(' ');
+      result.push(lineText);
+    }
+
+    return result.join(' ') || '[testo]';
   }
 
-  /* ─── Soglia di fontSize per ordinamento righe ─── */
-  function fontSizeThreshold(a, b) {
-    return Math.min(a.fontSize, b.fontSize) * 0.5;
+  async function extractHighlights(pdf) {
+    var all = [];
+    for (var p = 1; p <= pdf.numPages; p++) {
+      var page = await pdf.getPage(p);
+
+      var anns = [];
+      try { anns = await page.getAnnotations(); } catch (e) { console.warn('annotation error p' + p, e); }
+
+      var hl = anns.filter(isHighlight);
+      if (!hl.length) continue;
+
+      var items = [];
+      try { var tc = await page.getTextContent(); items = tc.items; } catch (e) { console.warn('textcontent error p' + p, e); }
+
+      for (var i = 0; i < hl.length; i++) {
+        var text = extractText(items, hl[i]).trim();
+        var note = (hl[i].contents || '').trim();
+        all.push({ page: p, text: text, note: note });
+      }
+    }
+    return all;
   }
 
-  /* ─── Overlap test tra due rettangoli (user space, y ↑) ─── */
-  function rectsOverlap(a, b) {
-    return a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+  /* ─── Markdown ─── */
+  function buildMarkdown(highlights, fileName) {
+    var pages = new Set(highlights.map(function (h) { return h.page; }));
+    var out = [];
+    out.push('---');
+    out.push('title: "Evidenziazioni"');
+    out.push('source: "' + fileName + '"');
+    out.push('date: "' + fmtDate() + '"');
+    out.push('count: ' + highlights.length);
+    out.push('pages: ' + pages.size);
+    out.push('---');
+    out.push('');
+    out.push('# Evidenziazioni estratte');
+    out.push('');
+    out.push('**Fonte:** ' + fileName + '  ');
+    out.push('**Data:** ' + fmtDate() + '  ');
+    out.push('**Totale:** ' + highlights.length + ' evidenziazioni · ' + pages.size + ' pagine');
+    out.push('');
+
+    var cur = 0;
+    for (var i = 0; i < highlights.length; i++) {
+      var h = highlights[i];
+      if (h.page !== cur) {
+        cur = h.page;
+        out.push('---');
+        out.push('## Pagina ' + cur);
+        out.push('');
+      }
+      out.push('> ' + h.text);
+      if (h.note) out.push('  *Nota: ' + h.note + '*');
+      out.push('');
+      out.push('');
+    }
+    return out.join('\n');
   }
-});
+
+})();
