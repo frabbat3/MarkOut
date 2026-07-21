@@ -3,67 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Holo Web - Benvenuto</title>
+  <title>MarkOut - Estrai evidenziato da PDF</title>
   <link rel="stylesheet" href="style.css">
+  <!-- PDF.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
 </head>
 <body>
 
-  <!-- Hero Section -->
-  <header class="hero">
-    <div class="container">
-      <h1>Holo Web</h1>
-      <p class="subtitle">Benvenuto nel nostro sito in costruzione</p>
-      <p class="description">
-        Siamo entusiasti di annunciare l'arrivo del nostro nuovo progetto.
-        Resta sintonizzato per novità emozionanti!
-      </p>
-      <a href="#contatti" class="btn">Contattaci</a>
+  <!-- ═══════ HEADER ═══════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <img src="image.svg" alt="MarkOut" class="logo-icon">
+        <span class="brand-name">MarkOut</span>
+      </div>
+      <nav class="header-nav">
+        <a href="#" class="nav-link active">Home</a>
+        <a href="#" class="nav-link">Carica PDF</a>
+        <a href="#" class="nav-link">Come funziona</a>
+        <a href="#" class="nav-link">Contatti</a>
+      </nav>
     </div>
   </header>
 
-  <!-- Features Section -->
-  <section class="features" id="features">
+  <!-- ═══════ HERO ═══════ -->
+  <section class="hero">
     <div class="container">
-      <h2>Cosa Offriamo</h2>
-      <div class="grid">
-        <div class="card">
-          <div class="icon">🚀</div>
-          <h3>Velocità</h3>
-          <p>Prestazioni ottimizzate per un'esperienza fluida e reattiva.</p>
+      <h1>Da PDF a Markdown</h1>
+      <p class="hero-sub">Carica un PDF, estrai il testo evidenziato e ottieni subito un documento Markdown pulito e pronto all'uso.</p>
+    </div>
+  </section>
+
+  <!-- ═══════ TOOL SECTION ═══════ -->
+  <section class="tool-section">
+    <div class="container">
+
+      <!-- Upload area -->
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📄</div>
+        <p class="upload-text"><strong>Clicca qui</strong> o trascina un PDF</p>
+        <p class="upload-hint">Il file viene elaborato interamente sul tuo browser — nessun dato viene inviato a server</p>
+        <input type="file" id="fileInput" accept=".pdf" hidden>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading hidden" id="loading">
+        <div class="spinner"></div>
+        <p>Estrazione in corso…</p>
+      </div>
+
+      <!-- Risultato -->
+      <div class="result hidden" id="result">
+        <div class="result-header">
+          <h2>Testo evidenziato estratto</h2>
+          <div class="result-actions">
+            <button class="btn btn-sm" id="copyBtn">📋 Copia</button>
+            <button class="btn btn-sm" id="downloadBtn">⬇ Scarica .md</button>
+          </div>
         </div>
-        <div class="card">
-          <div class="icon">🔒</div>
-          <h3>Sicurezza</h3>
-          <p>Protocolli avanzati per mantenere i tuoi dati al sicuro.</p>
+        <div class="result-meta" id="resultMeta"></div>
+        <pre class="markdown-output" id="markdownOutput"></pre>
+      </div>
+
+      <!-- Nessun evidenziato trovato -->
+      <div class="no-highlights hidden" id="noHighlights">
+        <p>😕 Nessun testo evidenziato trovato in questo PDF.</p>
+        <p class="hint">Assicurati che il PDF contenga delle <strong>evidenziature (highlight)</strong> salvate come annotazioni.</p>
+      </div>
+
+      <!-- Errore -->
+      <div class="error hidden" id="error">
+        <p>❌ <span id="errorMsg"></span></p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════ HOW IT WORKS ═══════ -->
+  <section class="how-it-works">
+    <div class="container">
+      <h2>Come funziona</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Carica il PDF</h3>
+          <p>Trascina o seleziona un file PDF con delle evidenziature.</p>
         </div>
-        <div class="card">
-          <div class="icon">💡</div>
-          <h3>Innovazione</h3>
-          <p>Tecnologie all'avanguardia per soluzioni moderne.</p>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Estrazione automatica</h3>
+          <p>Il tool analizza il PDF e trova tutto il testo evidenziato.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Ottieni il Markdown</h3>
+          <p>Copia o scarica il risultato in formato Markdown.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Contact Section -->
-  <section class="contact" id="contatti">
-    <div class="container">
-      <h2>Contattaci</h2>
-      <p>Hai domande? Scrivici e ti risponderemo al più presto.</p>
-      <form id="contactForm">
-        <input type="text" id="name" placeholder="Il tuo nome" required>
-        <input type="email" id="email" placeholder="La tua email" required>
-        <textarea id="message" rows="5" placeholder="Il tuo messaggio" required></textarea>
-        <button type="submit" class="btn">Invia Messaggio</button>
-      </form>
-      <p id="formFeedback" class="feedback hidden">Grazie per averci contattato! Ti risponderemo presto.</p>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p>&copy; 2025 Holo Web. Tutti i diritti riservati.</p>
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <img src="gemini-svg.svg" alt="Gemini" class="gemini-icon">
+      </div>
+      <div class="footer-right">
+        <span class="footer-brand">MarkOut</span>
+      </div>
     </div>
   </footer>
 

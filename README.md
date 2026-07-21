@@ -1,29 +1,18 @@
-# Holo Web - Landing Page
+# MarkOut
 
-Una semplice landing page dimostrativa per GitHub Pages.
+Estrai il testo evidenziato da un PDF e convertilo in Markdown, direttamente nel browser.
 
-## Come pubblicare su GitHub Pages
+## Come funziona
 
-1. **Crea un repository** su [GitHub](https://github.com/new)
-2. **Carica i file** nel repository:
-   ```bash
-   git init
-   git add .
-   git commit -m "Primo commit - landing page"
-   git branch -M main
-   git remote add origin https://github.com/<TUO_UTENTE>/<NOME_REPO>.git
-   git push -u origin main
-   ```
-3. **Attiva GitHub Pages**:
-   - Vai su Settings > Pages del tuo repository
-   - Seleziona `main` come branch e `/ (root)` come cartella
-   - Il sito sarà disponibile su `https://<TUO_UTENTE>.github.io/<NOME_REPO>/`
+1. **Carica un PDF** con delle evidenziature (highlight)
+2. **Elaborazione lato client** — il file non lascia mai il tuo computer
+3. **Ottieni il Markdown** — copia o scarica il risultato
 
-## Struttura
+## Tecnologie
 
-```
-├── index.html    # Pagina principale
-├── style.css     # Stili
-├── script.js     # Interattività (form)
-└── README.md     # Questo file
-```
+- [PDF.js](https://mozilla.github.io/pdf.js/) — parsing PDF nel browser
+- GitHub Pages — hosting statico
+
+## URL
+
+➡️ **https://frabbat3.github.io/MarkOut/**
