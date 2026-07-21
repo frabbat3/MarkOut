@@ -111,6 +111,12 @@ body {
   flex-shrink: 0;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .logo-icon {
   width: 36px;
   height: 36px;
