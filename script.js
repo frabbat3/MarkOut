@@ -1,19 +1,12 @@
 /**
- * MarkOut — Estrazione evidenziazioni da PDF (basato su logica Holo v2.0 funzionante)
+ * MarkOut — Estrazione evidenziazioni da PDF (logica Holo v2.0 + debug)
  */
 (function () {
   'use strict';
 
   /* ─── Theme Toggle ─── */
-  const themeToggle = document.getElementById('themeToggle');
-  const html = document.documentElement;
-
-  // Ripristina preferenza da localStorage
-  if (localStorage.getItem('markout-theme') === 'dark') {
-    html.setAttribute('data-theme', 'dark');
-  }
-
-  themeToggle.addEventListener('click', function () {
+  var html = document.documentElement;
+  document.getElementById('themeToggle').addEventListener('click', function () {
     if (html.hasAttribute('data-theme')) {
       html.removeAttribute('data-theme');
       localStorage.setItem('markout-theme', 'light');
@@ -22,59 +15,46 @@
       localStorage.setItem('markout-theme', 'dark');
     }
   });
+  if (localStorage.getItem('markout-theme') === 'dark') html.setAttribute('data-theme', 'dark');
 
   /* ─── DOM refs ─── */
-  const uploadArea   = document.getElementById('uploadArea');
-  const fileInput    = document.getElementById('fileInput');
-  const loading      = document.getElementById('loading');
-  const result       = document.getElementById('result');
-  const noHighlights = document.getElementById('noHighlights');
-  const error        = document.getElementById('error');
-  const errorMsg     = document.getElementById('errorMsg');
-  const markdownOut  = document.getElementById('markdownOutput');
-  const resultMeta   = document.getElementById('resultMeta');
-  const copyBtn      = document.getElementById('copyBtn');
-  const downloadBtn  = document.getElementById('downloadBtn');
+  var uploadArea   = document.getElementById('uploadArea');
+  var fileInput    = document.getElementById('fileInput');
+  var loading      = document.getElementById('loading');
+  var result       = document.getElementById('result');
+  var noHighlights = document.getElementById('noHighlights');
+  var error        = document.getElementById('error');
+  var errorMsg     = document.getElementById('errorMsg');
+  var markdownOut  = document.getElementById('markdownOutput');
+  var resultMeta   = document.getElementById('resultMeta');
+  var copyBtn      = document.getElementById('copyBtn');
+  var downloadBtn  = document.getElementById('downloadBtn');
 
-  let currentFile = null;
-  let currentHighlights = [];
+  var currentFile = null;
+  var currentHighlights = [];
 
-  /* ─── Helpers ─── */
-  const fmtDate = () => new Date().toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'numeric' });
+  function fmtDate() {
+    return new Date().toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'numeric' });
+  }
 
-  const esc = function (s) {
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-  };
-
-  const hideAll = function () {
+  function hideAll() {
     loading.classList.add('hidden');
     result.classList.add('hidden');
     noHighlights.classList.add('hidden');
     error.classList.add('hidden');
-  };
+  }
 
   /* ─── Upload UI ─── */
   uploadArea.addEventListener('click', function () { fileInput.click(); });
-
-  uploadArea.addEventListener('dragover', function (e) {
-    e.preventDefault();
-    uploadArea.classList.add('dragover');
-  });
-  uploadArea.addEventListener('dragleave', function () {
-    uploadArea.classList.remove('dragover');
-  });
+  uploadArea.addEventListener('dragover', function (e) { e.preventDefault(); uploadArea.classList.add('dragover'); });
+  uploadArea.addEventListener('dragleave', function () { uploadArea.classList.remove('dragover'); });
   uploadArea.addEventListener('drop', function (e) {
     e.preventDefault();
     uploadArea.classList.remove('dragover');
-    var f = e.dataTransfer.files[0];
-    if (f) processFile(f);
+    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
   });
-
   fileInput.addEventListener('change', function () {
-    var f = this.files[0];
-    if (f) processFile(f);
+    if (this.files[0]) processFile(this.files[0]);
     this.value = '';
   });
 
@@ -82,15 +62,9 @@
   copyBtn.addEventListener('click', async function () {
     if (!currentFile || !currentHighlights.length) return;
     var txt = buildMarkdown(currentHighlights, currentFile.name);
-    try {
-      await navigator.clipboard.writeText(txt);
-    } catch (ex) {
-      var ta = document.createElement('textarea');
-      ta.value = txt;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
+    try { await navigator.clipboard.writeText(txt); } catch (ex) {
+      var ta = document.createElement('textarea'); ta.value = txt;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     }
     copyBtn.textContent = '✅ Copiato!';
     setTimeout(function () { copyBtn.textContent = '📋 Copia'; }, 2000);
@@ -112,30 +86,60 @@
   function processFile(f) {
     hideAll();
     if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
-      showError('Il file selezionato non è un PDF valido.');
+      errorMsg.textContent = 'Il file non è un PDF valido.';
+      error.classList.remove('hidden');
       return;
     }
     currentFile = f;
     currentHighlights = [];
     loading.classList.remove('hidden');
 
+    console.log('📄 MarkOut: leggo file', f.name, '(' + (f.size / 1024).toFixed(1) + ' KB)');
+
+    // Verifica che pdfjsLib sia disponibile
+    if (typeof pdfjsLib === 'undefined') {
+      loading.classList.add('hidden');
+      errorMsg.textContent = 'PDF.js non caricato. Prova a ricaricare la pagina.';
+      error.classList.remove('hidden');
+      console.error('❌ pdfjsLib non definito!');
+      return;
+    }
+
     var reader = new FileReader();
-    reader.onload = async function (e) {
+    reader.onload = function (e) {
       try {
         var buf = new Uint8Array(e.target.result);
-        var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-        currentHighlights = await extractHighlights(pdf);
-        pdf.destroy();
-        showResult();
+        console.log('📄 buffer pronto, ' + buf.length + ' bytes, avvio getDocument...');
+
+        // Imposta worker PRIMA di getDocument
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        pdfjsLib.getDocument({ data: buf }).promise.then(function (pdf) {
+          console.log('📄 PDF caricato: ' + pdf.numPages + ' pagine');
+          return extractHighlights(pdf);
+        }).then(function (highlights) {
+          currentHighlights = highlights;
+          console.log('📄 Estrazione completata: ' + highlights.length + ' evidenziature');
+          pdfjsLib.getDocument({ data: buf }).promise.then(function (p) { p.destroy(); });
+          showResult();
+        }).catch(function (err) {
+          console.error('❌ Errore PDF:', err);
+          loading.classList.add('hidden');
+          errorMsg.textContent = err.message || 'Impossibile leggere il PDF.';
+          error.classList.remove('hidden');
+        });
+
       } catch (err) {
-        console.error('MarkOut error:', err);
+        console.error('❌ Errore:', err);
         loading.classList.add('hidden');
-        showError(err.message || 'Impossibile leggere il PDF.');
+        errorMsg.textContent = err.message;
+        error.classList.remove('hidden');
       }
     };
     reader.onerror = function () {
       loading.classList.add('hidden');
-      showError('Errore nella lettura del file.');
+      errorMsg.textContent = 'Errore nella lettura del file.';
+      error.classList.remove('hidden');
     };
     reader.readAsArrayBuffer(f);
   }
@@ -154,56 +158,71 @@
     result.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function showError(msg) {
-    errorMsg.textContent = msg;
-    error.classList.remove('hidden');
-  }
-
   /* ═══════════════════════════════════════════════
-     PDF HIGHLIGHT EXTRACTION — logica da Holo v2.0
+     PDF HIGHLIGHT EXTRACTION — logica Holo v2.0
      ═══════════════════════════════════════════════ */
 
   function isHighlight(a) {
     return a.subtype === 'Highlight';
   }
 
-  /* Overlap tra due bbox (formato x0,y0 → x1,y1) */
   function overlap(a, b) {
     var ox = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0));
     var oy = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
     return ox > 0 && oy > 0;
   }
 
-  /* Estrae testo da un'annotazione highlight */
   function extractText(items, ann) {
-    // 1. Se l'annotazione ha "contents", usalo subito (molti PDF lo popolano)
+    // 1. Usa "contents" se popolato
     if (ann.contents && ann.contents.trim()) {
+      console.log('  ✅ usato ann.contents: "' + ann.contents.trim().substring(0, 50) + '..."');
       return ann.contents.trim();
     }
 
     // 2. Estrai quadPoints o rect
     var quads = [];
     if (ann.quadPoints && ann.quadPoints.length >= 8) {
-      // quadPoints è un array piatto: [x1,y1,x2,y2,x3,y3,x4,y4, ...]
-      for (var i = 0; i < ann.quadPoints.length; i += 8) {
-        var q = ann.quadPoints.slice(i, i + 8);
-        quads.push({
-          x0: Math.min(q[0], q[2], q[4], q[6]),
-          y0: Math.min(q[1], q[3], q[5], q[7]),
-          x1: Math.max(q[0], q[2], q[4], q[6]),
-          y1: Math.max(q[1], q[3], q[5], q[7])
-        });
+      console.log('  📐 quadPoints lunghezza=' + ann.quadPoints.length + ', primo valore=' + ann.quadPoints[0] + ' (tipo=' + typeof ann.quadPoints[0] + ')');
+      var isNested = Array.isArray(ann.quadPoints[0]);
+      if (isNested) {
+        // Formato nidificato: [[x1,y1,...], [x1,y1,...]]
+        for (var i = 0; i < ann.quadPoints.length; i++) {
+          var q = ann.quadPoints[i];
+          if (q.length >= 8) {
+            quads.push({
+              x0: Math.min(q[0], q[2], q[4], q[6]),
+              y0: Math.min(q[1], q[3], q[5], q[7]),
+              x1: Math.max(q[0], q[2], q[4], q[6]),
+              y1: Math.max(q[1], q[3], q[5], q[7])
+            });
+          }
+        }
+      } else {
+        // Formato piatto: [x1,y1,x2,y2,x3,y3,x4,y4, ...]
+        for (var i = 0; i < ann.quadPoints.length; i += 8) {
+          var q = ann.quadPoints.slice(i, i + 8);
+          quads.push({
+            x0: Math.min(q[0], q[2], q[4], q[6]),
+            y0: Math.min(q[1], q[3], q[5], q[7]),
+            x1: Math.max(q[0], q[2], q[4], q[6]),
+            y1: Math.max(q[1], q[3], q[5], q[7])
+          });
+        }
       }
+      console.log('  → ' + quads.length + ' quads da quadPoints');
     } else if (ann.rect && ann.rect.length >= 4) {
-      quads.push({
-        x0: ann.rect[0],
-        y0: ann.rect[1],
-        x1: ann.rect[2],
-        y1: ann.rect[3]
-      });
+      quads.push({ x0: ann.rect[0], y0: ann.rect[1], x1: ann.rect[2], y1: ann.rect[3] });
+      console.log('  📐 usato rect: [' + quads[0].x0 + ', ' + quads[0].y0 + ', ' + quads[0].x1 + ', ' + quads[0].y1 + ']');
     }
 
-    if (!quads.length || !items.length) return '[testo]';
+    if (!quads.length) {
+      console.log('  ❌ nessun quadPoints e nessun rect!');
+      return '[testo]';
+    }
+    if (!items.length) {
+      console.log('  ❌ nessun text item sulla pagina!');
+      return '[testo]';
+    }
 
     // 3. Trova text items che overlap con i quad
     var matched = [];
@@ -224,9 +243,11 @@
       }
     }
 
+    console.log('  → ' + matched.length + ' text item che overlap con ' + quads.length + ' quads (su ' + items.length + ' totali)');
+
     if (!matched.length) return '[testo]';
 
-    // 4. Raggruppa per riga (Y approssimato a ±6 unità)
+    // 4. Raggruppa per riga
     var lines = {};
     for (var m = 0; m < matched.length; m++) {
       var row = Math.round(matched[m].y / 6) * 6;
@@ -235,29 +256,57 @@
     }
 
     var result = [];
-    var sortedRows = Object.keys(lines).map(Number).sort(function (a, b) { return b - a; }); // Y alto → inizio pagina
+    var sortedRows = Object.keys(lines).map(Number).sort(function (a, b) { return b - a; });
     for (var r = 0; r < sortedRows.length; r++) {
-      lines[sortedRows[r]].sort(function (a, b) { return a.x - b.x; }); // X crescente → sin→dx
+      lines[sortedRows[r]].sort(function (a, b) { return a.x - b.x; });
       var lineText = lines[sortedRows[r]].map(function (m) { return m.text; }).join(' ');
       result.push(lineText);
     }
 
-    return result.join(' ') || '[testo]';
+    var final = result.join(' ') || '[testo]';
+    console.log('  → testo estratto: "' + final.substring(0, 80) + (final.length > 80 ? '..."' : '"'));
+    return final;
   }
 
   async function extractHighlights(pdf) {
     var all = [];
     for (var p = 1; p <= pdf.numPages; p++) {
+      console.log('📄 Pagina ' + p + '/' + pdf.numPages + '...');
       var page = await pdf.getPage(p);
 
       var anns = [];
-      try { anns = await page.getAnnotations(); } catch (e) { console.warn('annotation error p' + p, e); }
+      try {
+        anns = await page.getAnnotations();
+        console.log('  Annotazioni totali: ' + anns.length);
+        // Logga i tipi di annotazioni trovate
+        var types = {};
+        for (var ai = 0; ai < anns.length; ai++) {
+          var subtype = anns[ai].subtype || '(nessuno)';
+          types[subtype] = (types[subtype] || 0) + 1;
+        }
+        console.log('  Tipi annotazioni:', JSON.stringify(types));
+        // Mostra qualche dettaglio sulle prime annotazioni
+        for (var ai = 0; ai < Math.min(3, anns.length); ai++) {
+          var a = anns[ai];
+          console.log('  [' + ai + '] subtype=' + a.subtype + ' hasContents=' + !!(a.contents) + ' hasQuadPoints=' + !!(a.quadPoints) + ' hasRect=' + !!(a.rect));
+        }
+      } catch (e) {
+        console.warn('  ⚠️ errore getAnnotations p' + p, e);
+      }
 
       var hl = anns.filter(isHighlight);
+      console.log('  Highlight trovate: ' + hl.length);
+
       if (!hl.length) continue;
 
       var items = [];
-      try { var tc = await page.getTextContent(); items = tc.items; } catch (e) { console.warn('textcontent error p' + p, e); }
+      try {
+        var tc = await page.getTextContent();
+        items = tc.items;
+        console.log('  Text items: ' + items.length);
+      } catch (e) {
+        console.warn('  ⚠️ errore getTextContent p' + p, e);
+      }
 
       for (var i = 0; i < hl.length; i++) {
         var text = extractText(items, hl[i]).trim();
@@ -265,6 +314,7 @@
         all.push({ page: p, text: text, note: note });
       }
     }
+    console.log('📄 TOTALE evidenziature: ' + all.length);
     return all;
   }
 
@@ -286,16 +336,10 @@
     out.push('**Data:** ' + fmtDate() + '  ');
     out.push('**Totale:** ' + highlights.length + ' evidenziazioni · ' + pages.size + ' pagine');
     out.push('');
-
     var cur = 0;
     for (var i = 0; i < highlights.length; i++) {
       var h = highlights[i];
-      if (h.page !== cur) {
-        cur = h.page;
-        out.push('---');
-        out.push('## Pagina ' + cur);
-        out.push('');
-      }
+      if (h.page !== cur) { cur = h.page; out.push('---'); out.push('## Pagina ' + cur); out.push(''); }
       out.push('> ' + h.text);
       if (h.note) out.push('  *Nota: ' + h.note + '*');
       out.push('');
@@ -304,4 +348,5 @@
     return out.join('\n');
   }
 
+  console.log('🔵 MarkOut ready — apri la console (F12) per vedere i log di debug');
 })();
