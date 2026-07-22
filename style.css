@@ -109,7 +109,15 @@ body {
 .nav-link:hover { background: var(--brand-light); color: var(--brand-text); }
 .nav-link.active { color: var(--brand-text); background: var(--brand-lighter); }
 
-/* ─── Theme Toggle ─── */
+/* ─── Hamburger (mobile) ─── */
+.hamburger {
+  display: none;
+  background: none; border: none;
+  font-size: 1.5rem; cursor: pointer;
+  color: var(--text); padding: 4px 8px; line-height: 1;
+  border-radius: 6px; transition: background 0.2s;
+}
+.hamburger:hover { background: var(--brand-light); }
 .theme-toggle {
   background: var(--brand-light); border: 1px solid var(--border);
   border-radius: 8px; width: 40px; height: 40px;
@@ -260,9 +268,23 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   .header-left { gap: 8px; }
   .brand-name { font-size: 1.1rem; }
   .logo-icon { width: 30px; height: 30px; }
-  .header-right { gap: 6px; }
-  .header-nav { gap: 2px; }
-  .nav-link { padding: 6px 10px; font-size: 0.8rem; }
+  .header-right { gap: 4px; position: relative; }
+
+  /* Mostra hamburger, nascondi nav */
+  .hamburger { display: block; }
+  .header-nav {
+    display: none;
+    position: absolute; top: 100%; right: 0;
+    background: var(--header-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 6px; min-width: 170px;
+    flex-direction: column; gap: 2px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 200;
+    margin-top: 8px;
+  }
+  .header-nav.nav-open { display: flex; }
+  .nav-link { padding: 10px 14px; font-size: 0.85rem; border-radius: 8px; }
+
   .theme-toggle { width: 34px; height: 34px; font-size: 1rem; }
 
   .hero { padding: 40px 0 30px; }
@@ -290,10 +312,11 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 @media (max-width: 480px) {
   .header-inner { gap: 6px; }
   .header-left { gap: 5px; }
-  .header-right { gap: 4px; }
+  .header-right { gap: 3px; }
   .brand-name { font-size: 0.95rem; }
-  .header-nav { gap: 0; }
-  .nav-link { padding: 5px 6px; font-size: 0.72rem; border-radius: 6px; }
+  .hamburger { font-size: 1.3rem; padding: 4px 6px; }
+  .header-nav { min-width: 160px; border-radius: 8px; }
+  .nav-link { padding: 9px 12px; font-size: 0.8rem; }
   .theme-toggle { width: 32px; height: 32px; font-size: 0.95rem; }
 
   .hero h1 { font-size: 1.35rem; }

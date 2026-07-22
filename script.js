@@ -17,6 +17,19 @@
   });
   if (localStorage.getItem('markout-theme') === 'dark') html.setAttribute('data-theme', 'dark');
 
+  /* ─── Hamburger (mobile) ─── */
+  var hamburger = document.getElementById('hamburger');
+  var headerNav = document.getElementById('headerNav');
+  hamburger.addEventListener('click', function () {
+    headerNav.classList.toggle('nav-open');
+  });
+  // Chiudi menu cliccando fuori
+  document.addEventListener('click', function (e) {
+    if (!hamburger.contains(e.target) && !headerNav.contains(e.target)) {
+      headerNav.classList.remove('nav-open');
+    }
+  });
+
   /* ─── DOM refs ─── */
   var uploadArea   = document.getElementById('uploadArea');
   var fileInput    = document.getElementById('fileInput');
