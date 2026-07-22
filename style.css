@@ -220,7 +220,7 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 }
 .footer-logo {
   width: 36px; height: 36px; display: block;
-  background: #ffffff; border-radius: 6px; padding: 3px;
+  border-radius: 4px;
 }
 .footer-brand {
   font-size: 1.2rem; font-weight: 700;
