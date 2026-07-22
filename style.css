@@ -220,7 +220,7 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 }
 .footer-logo {
   width: 36px; height: 36px; display: block;
-  filter: brightness(0) invert(1); opacity: 0.9;
+  background: #ffffff; border-radius: 6px; padding: 3px;
 }
 .footer-brand {
   font-size: 1.2rem; font-weight: 700;
@@ -257,10 +257,12 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   .header-inner { padding: 0 12px; height: 56px; }
+  .header-left { gap: 8px; }
   .brand-name { font-size: 1.1rem; }
   .logo-icon { width: 30px; height: 30px; }
-  .header-nav { gap: 0; }
-  .nav-link { padding: 6px 8px; font-size: 0.78rem; }
+  .header-right { gap: 6px; }
+  .header-nav { gap: 2px; }
+  .nav-link { padding: 6px 10px; font-size: 0.8rem; }
   .theme-toggle { width: 34px; height: 34px; font-size: 1rem; }
 
   .hero { padding: 40px 0 30px; }
@@ -278,19 +280,20 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   .markdown-output { max-height: 350px; font-size: 0.8rem; padding: 16px; }
 
   .site-footer { padding: 24px 0; }
-  .footer-inner { flex-direction: column; gap: 20px; align-items: flex-start; }
+  .footer-inner { flex-direction: row; align-items: center; justify-content: space-between; }
   .footer-right { gap: 32px; }
   .footer-heading { font-size: 0.75rem; }
   .footer-links a { font-size: 0.85rem; }
+  .footer-logo { width: 32px; height: 32px; padding: 2px; }
 }
 
 @media (max-width: 480px) {
   .header-inner { gap: 6px; }
-  .header-left { gap: 6px; }
+  .header-left { gap: 5px; }
   .header-right { gap: 4px; }
-  .brand-name { font-size: 1rem; }
+  .brand-name { font-size: 0.95rem; }
   .header-nav { gap: 0; }
-  .nav-link { padding: 6px 5px; font-size: 0.7rem; border-radius: 6px; }
+  .nav-link { padding: 5px 6px; font-size: 0.72rem; border-radius: 6px; }
   .theme-toggle { width: 32px; height: 32px; font-size: 0.95rem; }
 
   .hero h1 { font-size: 1.35rem; }
@@ -309,4 +312,6 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   .step p { font-size: 0.85rem; }
 
   .footer-links a { font-size: 0.8rem; }
+  .footer-logo { width: 28px; height: 28px; padding: 2px; border-radius: 4px; }
+  .footer-brand { font-size: 1rem; }
 }
