@@ -243,7 +243,6 @@
 
     _modelLoading = true;
     _modelPromise = new Promise(function (resolve, reject) {
-      // Verifica che tflite e tf siano disponibili
       if (typeof tflite === 'undefined' || typeof tflite.loadTFLiteModel === 'undefined') {
         reject(new Error('tflite.js non caricato. Verifica la connessione a Internet.'));
         return;
@@ -254,10 +253,14 @@
       }
 
       console.log('🔵 ML: setWasmPath', WASM_PATH);
-      tflite.setWasmPath(WASM_PATH).then(function () {
-        console.log('🔵 ML: WASM path impostato. Carico modello...');
-        return tflite.loadTFLiteModel(MODEL_FILE);
-      }).then(function (model) {
+      try {
+        tflite.setWasmPath(WASM_PATH);  // sincrono
+      } catch (e) {
+        console.warn('⚠️ setWasmPath fallito (non grave):', e);
+      }
+
+      console.log('🔵 ML: carico modello…');
+      tflite.loadTFLiteModel(MODEL_FILE).then(function (model) {
         _model = model;
         _modelLoading = false;
         console.log('✅ ML: modello caricato');
