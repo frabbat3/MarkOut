@@ -187,6 +187,78 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   max-height: 500px; overflow-y: auto;
 }
 
+/* ─── View tabs ─── */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 24px 0;
+  background: var(--card2);
+  border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  padding: 8px 18px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.tab-btn:hover {
+  background: var(--brand-light);
+  color: var(--brand-text);
+}
+.tab-btn.active {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border);
+  font-weight: 600;
+  position: relative;
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--card);
+}
+
+/* ─── PDF Viewer (Bounding Box) ─── */
+.pdf-viewer {
+  padding: 20px 24px;
+  background: var(--card2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.bbox-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bbox-page-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text2);
+  padding: 4px 0;
+}
+.bbox-page canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  background: #fff;
+}
+
 /* ─── Crop grid ─── */
 .crop-grid {
   display: grid;
@@ -334,6 +406,11 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   .result-header { flex-direction: column; align-items: flex-start; }
   .markdown-output { max-height: 350px; font-size: 0.8rem; padding: 16px; }
 
+  .view-tabs { padding: 10px 16px 0; gap: 2px; overflow-x: auto; }
+  .tab-btn { padding: 6px 12px; font-size: 0.78rem; white-space: nowrap; }
+  .pdf-viewer { padding: 14px 16px; gap: 20px; }
+  .bbox-page-label { font-size: 0.78rem; }
+
   .crop-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
   .crop-item { border-radius: 6px; }
   .crop-item img { border-radius: 6px; }
@@ -366,6 +443,10 @@ html[data-theme="dark"] .icon-moon { display: inline; }
 
   .result-header h2 { font-size: 1rem; }
   .btn-sm { padding: 8px 14px; font-size: 0.8rem; }
+  .view-tabs { padding: 8px 12px 0; gap: 2px; }
+  .tab-btn { padding: 5px 10px; font-size: 0.72rem; }
+  .pdf-viewer { padding: 10px 12px; gap: 16px; }
+  .bbox-page-label { font-size: 0.72rem; }
 
   .step-num { width: 40px; height: 40px; font-size: 1.1rem; }
   .step h3 { font-size: 0.95rem; }

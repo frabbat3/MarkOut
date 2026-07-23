@@ -1,0 +1,19 @@
+# Large model files (downloaded at runtime via CDN or HuggingFace)
+*.onnx
+*.tflite
+
+# Python
+pipeline_out/
+pipeline.py
+__pycache__/
+*.pyc
+
+# Dictionaries
+english_words.json
+
+# Output / test files
+batch_output*/
+test_*.png
+
+# Archives
+*.zip

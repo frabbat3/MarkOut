@@ -11,8 +11,7 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
   <!-- TensorFlow.js + TFLite Web -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.10/dist/tf-tflite.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
 </head>
 <body>
 
@@ -75,7 +74,21 @@
           </div>
         </div>
         <div class="result-meta" id="resultMeta"></div>
+
+        <!-- View tabs -->
+        <div class="view-tabs" id="viewTabs">
+          <button class="tab-btn active" data-view="bbox">📄 Bounding Box</button>
+          <button class="tab-btn" data-view="crops">✂️ Evidenziazioni</button>
+          <button class="tab-btn" data-view="markdown">📝 Markdown</button>
+        </div>
+
+        <!-- PDF viewer with bounding boxes -->
+        <div class="pdf-viewer" id="pdfViewer"></div>
+
+        <!-- Crop grid (evidenziazioni ritagliate) -->
         <div class="crop-grid" id="cropContainer"></div>
+
+        <!-- Markdown output -->
         <pre class="markdown-output" id="markdownOutput"></pre>
       </div>
 

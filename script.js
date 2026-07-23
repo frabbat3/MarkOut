@@ -1,6 +1,6 @@
 /**
  * MarkOut — Estrazione testo evidenziato via ML pipeline (YOLO25n)
- * Pipeline: PDF → render → deskew → HT_detector_v7.8.tflite → crop → OCR
+ * Pipeline: PDF → render → deskew → HT_detector_v7.8.onnx → crop → OCR
  */
 (function () {
   'use strict';
@@ -10,8 +10,17 @@
   var MAX_DIM = 2000;
   var MODEL_SIZE = 1024;
   var CONF_THRES = 0.30;
-  var MODEL_FILE = 'HT_detector_v7.8.tflite';
-  var WASM_PATH = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.10/wasm/';
+  var MODEL_FILE = 'HT_detector_v7.8.onnx';
+  var INPUT_NAME = 'images';
+  var OUTPUT_NAME = 'output0';
+
+  /* ─── OCR (PP-OCRv6) ─── */
+  var OCR_MODEL_FILE = 'PP-OCRv6_rec.onnx';
+  var OCR_INPUT_NAME = 'x';
+  var OCR_OUTPUT_NAME = 'fetch_name_0';
+  var OCR_CHARS_FILE = 'ppocr_chars.json';
+  var OCR_HEIGHT = 48;
+  var OCR_BLANK_ID = 0; // blank è alla classe 0
 
   /* ─── Theme Toggle ─── */
   var html = document.documentElement;
@@ -53,8 +62,13 @@
   var downloadBtn  = document.getElementById('downloadBtn');
   var cropContainer = document.getElementById('cropContainer');
 
+  var pdfViewer      = document.getElementById('pdfViewer');
+  var viewTabs       = document.getElementById('viewTabs');
+  var tabBtns        = viewTabs ? viewTabs.querySelectorAll('.tab-btn') : [];
+
   var currentFile = null;
-  var cropData  = []; // { page, score, cropCanvas }
+  var cropData  = []; // { page, score, canvas } — crop images
+  var pageData  = []; // { pageNum, canvas, boxes } — full pages with boxes
 
   /* ─── Helpers ─── */
   function showLoading(msg) {
@@ -95,71 +109,6 @@
         return canvas;
       });
     });
-  }
-
-  /* ─── Stage: deskew (allineamento) ────────────── */
-  function getGrayData(canvas) {
-    var ctx = canvas.getContext('2d');
-    var w = canvas.width, h = canvas.height;
-    var data = ctx.getImageData(0, 0, w, h).data;
-    var gray = new Float32Array(w * h);
-    for (var i = 0; i < w * h; i++) {
-      var p = i * 4;
-      gray[i] = 0.299 * data[p] + 0.587 * data[p+1] + 0.114 * data[p+2];
-    }
-    return { gray: gray, w: w, h: h };
-  }
-
-  function rotateCanvas(src, angle, w, h) {
-    var out = document.createElement('canvas');
-    out.width = w; out.height = h;
-    var ctx = out.getContext('2d');
-    ctx.save();
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(angle * Math.PI / 180);
-    ctx.drawImage(src, -w / 2, -h / 2, w, h);
-    ctx.restore();
-    return out;
-  }
-
-  function rowVariance(gray, w, h) {
-    var sums = new Float64Array(h);
-    for (var y = 0; y < h; y++) {
-      var s = 0;
-      for (var x = 0; x < w; x++) s += gray[y * w + x];
-      sums[y] = s;
-    }
-    var mean = 0;
-    for (var y = 0; y < h; y++) mean += sums[y];
-    mean /= h;
-    var varSum = 0;
-    for (var y = 0; y < h; y++) varSum += (sums[y] - mean) * (sums[y] - mean);
-    return varSum / h;
-  }
-
-  function deskewCanvas(canvas) {
-    var w = canvas.width, h = canvas.height;
-    var scale = Math.min(1, 1000 / Math.max(w, h));
-    var sw = Math.round(w * scale), sh = Math.round(h * scale);
-
-    // Downscale
-    var small = document.createElement('canvas');
-    small.width = sw; small.height = sh;
-    var sctx = small.getContext('2d');
-    sctx.drawImage(canvas, 0, 0, sw, sh);
-
-    // Cerca miglior angolo
-    var bestAngle = 0, bestVar = -1;
-    for (var a = -10; a <= 10; a += 0.5) {
-      var rotated = rotateCanvas(small, a, sw, sh);
-      var d = getGrayData(rotated);
-      var v = rowVariance(d.gray, d.w, d.h);
-      if (v > bestVar) { bestVar = v; bestAngle = a; }
-    }
-
-    // Ruota full-size
-    var out = rotateCanvas(canvas, bestAngle, w, h);
-    return { canvas: out, angle: bestAngle };
   }
 
   /* ─── Stage: preprocessing YOLO ───────────────── */
@@ -232,65 +181,219 @@
     return c;
   }
 
-  /* ─── Stage: esecuzione modello TFLite ────────── */
-  var _model = null;
+  /* ─── OCR preprocessing ──────────────────────── */
+  function preprocessOCR(canvas) {
+    var srcW = canvas.width, srcH = canvas.height;
+    var scale = OCR_HEIGHT / srcH;
+    var tgtW = Math.max(8, Math.round(srcW * scale / 8) * 8); // multiple of 8
+
+    // Resize to target size
+    var resized = document.createElement('canvas');
+    resized.width = tgtW;
+    resized.height = OCR_HEIGHT;
+    var ctx = resized.getContext('2d');
+    ctx.drawImage(canvas, 0, 0, tgtW, OCR_HEIGHT);
+
+    // Get RGBA pixels
+    var imgData = ctx.getImageData(0, 0, tgtW, OCR_HEIGHT);
+    var data = imgData.data;
+
+    // Convert to BGR CHW float32 [0,1]
+    var arr = new Float32Array(3 * OCR_HEIGHT * tgtW);
+    var stride = OCR_HEIGHT * tgtW;
+    for (var y = 0; y < OCR_HEIGHT; y++) {
+      for (var x = 0; x < tgtW; x++) {
+        var idx = (y * tgtW + x) * 4;
+        // RGBA → BGR (swap R↔B)
+        arr[0 * stride + y * tgtW + x] = data[idx + 2] / 255.0; // B
+        arr[1 * stride + y * tgtW + x] = data[idx + 1] / 255.0; // G
+        arr[2 * stride + y * tgtW + x] = data[idx + 0] / 255.0; // R
+      }
+    }
+    return { tensorArr: arr, width: tgtW, height: OCR_HEIGHT };
+  }
+
+  /* ─── CTC decode ─────────────────────────────── */
+  function ctcDecode(outputData, seqLen, numClasses) {
+    if (!_ocrChars) return '';
+    numClasses = numClasses || (OCR_BLANK_ID + 1);
+    var result = [];
+    var prevIdx = -1;
+    for (var t = 0; t < seqLen; t++) {
+      var off = t * numClasses;
+      // Argmax
+      var maxIdx = 0;
+      var maxVal = outputData[off];
+      for (var c = 1; c < numClasses; c++) {
+        var v = outputData[off + c];
+        if (v > maxVal) { maxVal = v; maxIdx = c; }
+      }
+      if (maxIdx !== OCR_BLANK_ID && maxIdx !== prevIdx) {
+        // Mappatura diretta: classe N -> _ocrChars[N]
+        // _ocrChars[0] = 'blank' (non usato perché filtrato sopra)
+        // _ocrChars[18709] = ' ' (spazio)
+        if (maxIdx >= 0 && maxIdx < _ocrChars.length) {
+          result.push(_ocrChars[maxIdx]);
+        }
+      }
+      prevIdx = (maxIdx === OCR_BLANK_ID) ? -1 : maxIdx;
+    }
+    return result.join('');
+  }
+
+  /* ─── Stage: esecuzione modello ONNX (YOLO) ─── */
+  var _session = null;
   var _modelLoading = false;
   var _modelPromise = null;
 
+  /* ─── OCR Model (PP-OCRv6) ──────────────────── */
+  var _ocrSession = null;
+  var _ocrLoading = false;
+  var _ocrPromise = null;
+  var _ocrChars = null; // char array
+  var _ocrCharsPromise = null;
+
   function loadModel() {
-    if (_model) return Promise.resolve(_model);
+    if (_session) return Promise.resolve(_session);
     if (_modelPromise) return _modelPromise;
 
     _modelLoading = true;
     _modelPromise = new Promise(function (resolve, reject) {
-      if (typeof tflite === 'undefined' || typeof tflite.loadTFLiteModel === 'undefined') {
-        reject(new Error('tflite.js non caricato. Verifica la connessione a Internet.'));
-        return;
-      }
-      if (typeof tf === 'undefined') {
-        reject(new Error('TensorFlow.js non caricato.'));
+      if (typeof ort === 'undefined') {
+        reject(new Error('ONNX Runtime Web non caricato. Verifica la connessione a Internet.'));
         return;
       }
 
-      console.log('🔵 ML: setWasmPath', WASM_PATH);
-      try {
-        tflite.setWasmPath(WASM_PATH);  // sincrono
-      } catch (e) {
-        console.warn('⚠️ setWasmPath fallito (non grave):', e);
+      console.log('🔵 ML: carico modello ONNX…');
+      // Path esplicito per i WASM runtime
+      if (ort.env && ort.env.wasm) {
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
       }
-
-      console.log('🔵 ML: carico modello…');
-      tflite.loadTFLiteModel(MODEL_FILE).then(function (model) {
-        _model = model;
+      ort.InferenceSession.create(MODEL_FILE, {
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'all'
+      }).then(function (session) {
+        _session = session;
         _modelLoading = false;
-        console.log('✅ ML: modello caricato');
-        resolve(model);
+        console.log('✅ ML: sessione ONNX pronta');
+        resolve(session);
       }).catch(function (err) {
         _modelLoading = false;
         _modelPromise = null;
-        console.error('❌ ML: errore caricamento modello:', err);
+        console.error('❌ ML: errore caricamento ONNX:', err);
         reject(err);
       });
     });
     return _modelPromise;
   }
 
+  /* ─── Load OCR char dictionary ───────────────── */
+  function loadChars() {
+    if (_ocrChars) return Promise.resolve(_ocrChars);
+    if (_ocrCharsPromise) return _ocrCharsPromise;
+
+    _ocrCharsPromise = fetch(OCR_CHARS_FILE).then(function (r) {
+      if (!r.ok) throw new Error('Impossibile caricare ' + OCR_CHARS_FILE);
+      return r.json();
+    }).then(function (chars) {
+      _ocrChars = chars;
+      console.log('✅ OCR: caricati ' + chars.length + ' caratteri');
+      return chars;
+    }).catch(function (err) {
+      _ocrCharsPromise = null;
+      console.error('❌ OCR: errore caricamento caratteri:', err);
+      throw err;
+    });
+    return _ocrCharsPromise;
+  }
+
+  /* ─── Load OCR model (PP-OCRv6) ──────────────── */
+  function loadOCRModel() {
+    if (_ocrSession) return Promise.resolve(_ocrSession);
+    if (_ocrPromise) return _ocrPromise;
+
+    _ocrPromise = new Promise(function (resolve, reject) {
+      if (typeof ort === 'undefined') {
+        reject(new Error('ONNX Runtime Web non caricato'));
+        return;
+      }
+
+      // Ensure WASM paths are set
+      if (ort.env && ort.env.wasm) {
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
+      }
+
+      console.log('🔵 OCR: carico modello PP-OCRv6…');
+      ort.InferenceSession.create(OCR_MODEL_FILE, {
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'all'
+      }).then(function (session) {
+        _ocrSession = session;
+        _ocrLoading = false;
+        console.log('✅ OCR: sessione PP-OCRv6 pronta');
+        resolve(session);
+      }).catch(function (err) {
+        _ocrLoading = false;
+        _ocrPromise = null;
+        console.error('❌ OCR: errore caricamento PP-OCRv6:', err);
+        reject(err);
+      });
+    });
+    return _ocrPromise;
+  }
+
+  /* ─── Run OCR on a single crop ───────────────── */
+  function runOCR(cropCanvas) {
+    if (!_ocrSession || !_ocrChars) {
+      return Promise.resolve('');
+    }
+    var prep = preprocessOCR(cropCanvas);
+    var tensor = new ort.Tensor('float32', prep.tensorArr, [1, 3, prep.height, prep.width]);
+    return _ocrSession.run({ [OCR_INPUT_NAME]: tensor }).then(function (results) {
+      var output = results[OCR_OUTPUT_NAME];
+      // output shape: [1, seqLen, numClasses]
+      var dims = output.dims;
+      var seqLen = dims[1];
+      var numClasses = dims[2];
+      var text = ctcDecode(output.data, seqLen, numClasses);
+      return text;
+    }).catch(function (err) {
+      console.warn('⚠️ OCR: errore riconoscimento:', err);
+      return '';
+    });
+  }
+
   /* ─── Pipeline principale ─────────────────────── */
   function processPDF(pdf) {
     cropData = [];
+    pageData = [];
     var totalPages = pdf.numPages;
 
-    return loadModel().then(function () {
-      // Processa pagina per pagina
+    // Carica modello YOLO + OCR + dizionario caratteri
+    return Promise.all([loadModel(), loadOCRModel(), loadChars()]).then(function () {
+      // Processa pagina per pagina (YOLO detection)
       var promise = Promise.resolve();
       for (var p = 1; p <= totalPages; p++) {
         promise = promise.then(function (pageNum) {
-          return processPage(pdf, pageNum).then(function (crops) {
-            cropData = cropData.concat(crops);
+          return processPage(pdf, pageNum).then(function (result) {
+            cropData = cropData.concat(result.crops);
           });
         }.bind(null, p));
       }
       return promise;
+    }).then(function () {
+      // OCR su ogni crop
+      if (!cropData.length) return;
+      showLoading('🔍 Riconoscimento testo OCR (' + cropData.length + ' evidenziazioni)…');
+      var ocrPromise = Promise.resolve();
+      cropData.forEach(function (crop) {
+        ocrPromise = ocrPromise.then(function () {
+          return runOCR(crop.canvas).then(function (text) {
+            crop.text = text;
+          });
+        });
+      });
+      return ocrPromise;
     });
   }
 
@@ -299,37 +402,35 @@
 
     return renderPageToCanvas(pdf, pageNum).then(function (pageCanvas) {
 
-      showLoading('📄 Pagina ' + pageNum + ' — allineamento…');
-      var deskewed = deskewCanvas(pageCanvas);
-      var deskewedCanvas = deskewed.canvas;
-
       showLoading('📄 Pagina ' + pageNum + ' — rilevo evidenziature…');
+      var deskewedCanvas = pageCanvas;
       var prep = preprocessYOLO(deskewedCanvas);
-      var inputTensor = tf.tensor(prep.tensorArr, [1, 3, MODEL_SIZE, MODEL_SIZE], 'float32');
+      var inputTensor = new ort.Tensor('float32', prep.tensorArr, [1, 3, MODEL_SIZE, MODEL_SIZE]);
 
       try {
-        var outputTensor = _model.predict(inputTensor);
-        return outputTensor.data().then(function (rawData) {
-          inputTensor.dispose();
-          outputTensor.dispose();
+        return _session.run({ [INPUT_NAME]: inputTensor }).then(function (results) {
+          var output = results[OUTPUT_NAME];
+          var rawData = output.data;
 
           var dets = decodeYOLO(rawData, CONF_THRES);
           var boxes = boxesToOrig(dets, prep.scale, prep.padX, prep.padY);
           console.log('📄 Pagina ' + pageNum + ': ' + boxes.length + ' highlight');
 
+          // Store full page + boxes for bounding box viewer
+          pageData.push({ pageNum: pageNum, canvas: deskewedCanvas, boxes: boxes });
+
           var crops = [];
           for (var i = 0; i < boxes.length; i++) {
             var cropCanv = extractCropCanvas(deskewedCanvas, boxes[i]);
             if (cropCanv) {
-              crops.push({ page: pageNum, score: boxes[i].score, canvas: cropCanv });
+              crops.push({ page: pageNum, score: boxes[i].score, canvas: cropCanv, text: '' });
             }
           }
-          return crops;
+          return { crops: crops, boxes: boxes };
         });
       } catch (predErr) {
-        inputTensor.dispose();
         console.warn('⚠️ Predict error page ' + pageNum + ':', predErr);
-        return [];
+        return { crops: [], boxes: [] };
       }
 
     });
@@ -359,11 +460,111 @@
     var cur = 0;
     sorted.forEach(function (c) {
       if (c.page !== cur) { cur = c.page; out.push('---'); out.push('## Pagina ' + cur); out.push(''); }
-      out.push('> ![crop](crop_p' + c.page + '_s' + c.score.toFixed(2) + ')');
+      var text = c.text || '';
+      if (text) {
+        out.push('> ' + text);
+      } else {
+        out.push('> ![crop](crop_p' + c.page + '_s' + c.score.toFixed(2) + ')');
+      }
       out.push('');
       out.push('');
     });
     return out.join('\n');
+  }
+
+  /* ─── Render pages with bounding boxes ──────── */
+  function renderBBoxPages() {
+    if (!pdfViewer) return;
+    pdfViewer.innerHTML = '';
+
+    pageData.forEach(function (pd) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'bbox-page';
+
+      var label = document.createElement('div');
+      label.className = 'bbox-page-label';
+      label.textContent = 'Pagina ' + pd.pageNum + ' — ' + pd.boxes.length + ' evidenziazion' + (pd.boxes.length === 1 ? 'e' : 'i');
+      wrapper.appendChild(label);
+
+      // Create output canvas
+      var outCanvas = document.createElement('canvas');
+      outCanvas.width = pd.canvas.width;
+      outCanvas.height = pd.canvas.height;
+      var ctx = outCanvas.getContext('2d');
+
+      // Draw the page
+      ctx.drawImage(pd.canvas, 0, 0);
+
+      // Draw bounding boxes
+      pd.boxes.forEach(function (box) {
+        var x = box.x1, y = box.y1;
+        var w = box.x2 - box.x1;
+        var h = box.y2 - box.y1;
+
+        // Semi-transparent highlight fill
+        ctx.fillStyle = 'rgba(255, 230, 0, 0.25)';
+        ctx.fillRect(x, y, w, h);
+
+        // Border
+        ctx.strokeStyle = '#FF6B35';
+        ctx.lineWidth = Math.max(2, Math.round(Math.min(outCanvas.width, outCanvas.height) / 400));
+        ctx.strokeRect(x, y, w, h);
+
+        // Score badge
+        var labelText = (box.score * 100).toFixed(0) + '%';
+        ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+        var textW = ctx.measureText(labelText).width;
+        var bx = x, by = y - 22;
+        if (by < 0) { by = y + 2; }
+        ctx.fillStyle = '#FF6B35';
+        var badgeW = textW + 12, badgeH = 20, badgeR = 4;
+        ctx.beginPath();
+        ctx.moveTo(bx - 4 + badgeR, by - 1);
+        ctx.lineTo(bx - 4 + badgeW - badgeR, by - 1);
+        ctx.quadraticCurveTo(bx - 4 + badgeW, by - 1, bx - 4 + badgeW, by - 1 + badgeR);
+        ctx.lineTo(bx - 4 + badgeW, by - 1 + badgeH - badgeR);
+        ctx.quadraticCurveTo(bx - 4 + badgeW, by - 1 + badgeH, bx - 4 + badgeW - badgeR, by - 1 + badgeH);
+        ctx.lineTo(bx - 4 + badgeR, by - 1 + badgeH);
+        ctx.quadraticCurveTo(bx - 4, by - 1 + badgeH, bx - 4, by - 1 + badgeH - badgeR);
+        ctx.lineTo(bx - 4, by - 1 + badgeR);
+        ctx.quadraticCurveTo(bx - 4, by - 1, bx - 4 + badgeR, by - 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.fillText(labelText, bx + 2, by + 14);
+      });
+
+      // Scale for display
+      outCanvas.style.maxWidth = '100%';
+      outCanvas.style.height = 'auto';
+      outCanvas.style.borderRadius = '8px';
+      outCanvas.style.boxShadow = '0 2px 12px rgba(0,0,0,0.12)';
+
+      wrapper.appendChild(outCanvas);
+      pdfViewer.appendChild(wrapper);
+    });
+  }
+
+  /* ─── Tab switching ──────────────────────────── */
+  function switchView(viewName) {
+    // Update tab buttons
+    tabBtns.forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
+    });
+
+    // Toggle panels
+    pdfViewer.classList.toggle('hidden', viewName !== 'bbox');
+    cropContainer.classList.toggle('hidden', viewName !== 'crops');
+    markdownOut.classList.toggle('hidden', viewName !== 'markdown');
+  }
+
+  if (viewTabs) {
+    viewTabs.addEventListener('click', function (e) {
+      var btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      var view = btn.getAttribute('data-view');
+      if (view) switchView(view);
+    });
   }
 
   /* ═══════════════════════════════════════════════
@@ -494,7 +695,11 @@
 
       var label = document.createElement('span');
       label.className = 'crop-label';
-      label.textContent = 'p.' + c.page + ' (' + (c.score * 100).toFixed(0) + '%)';
+      var labelText = 'p.' + c.page + ' (' + (c.score * 100).toFixed(0) + '%)';
+      if (c.text) {
+        labelText += ' ' + c.text.slice(0, 40) + (c.text.length > 40 ? '…' : '');
+      }
+      label.textContent = labelText;
       div.appendChild(label);
 
       cropContainer.appendChild(div);
@@ -502,7 +707,13 @@
 
     resultMeta.textContent = cropData.length + ' evidenziazioni · ' + pages.size + ' pagine — ' + currentFile.name;
     markdownOut.textContent = buildMarkdown(cropData, currentFile.name);
+
+    // Renderizza le pagine con bounding box
+    renderBBoxPages();
+
+    // Mostra il risultato con la vista Bounding Box attiva di default
     result.classList.remove('hidden');
+    switchView('bbox');
     result.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
