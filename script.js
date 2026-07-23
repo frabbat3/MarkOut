@@ -384,12 +384,16 @@
     }).then(function () {
       // OCR su ogni crop
       if (!cropData.length) return;
-      showLoading('🔍 Riconoscimento testo OCR (' + cropData.length + ' evidenziazioni)…');
+      var ocrDone = 0;
+      var ocrTotal = cropData.length;
+      showLoading('🔍 OCR: 0/' + ocrTotal);
       var ocrPromise = Promise.resolve();
       cropData.forEach(function (crop) {
         ocrPromise = ocrPromise.then(function () {
           return runOCR(crop.canvas).then(function (text) {
             crop.text = text;
+            ocrDone++;
+            showLoading('🔍 OCR: ' + ocrDone + '/' + ocrTotal);
           });
         });
       });
