@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MarkOut - Estrai evidenziato da PDF</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <!-- PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
+  <!-- TensorFlow.js + TFLite Web -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.10/dist/tf-tflite.min.js"></script>
 </head>
 <body>
 
@@ -59,7 +62,7 @@
       <!-- Loading -->
       <div class="loading hidden" id="loading">
         <div class="spinner"></div>
-        <p>Analizzo il PDF e trovo le evidenziazioni…</p>
+        <p>Caricamento modello ML…</p>
       </div>
 
       <!-- Risultato -->
@@ -72,6 +75,7 @@
           </div>
         </div>
         <div class="result-meta" id="resultMeta"></div>
+        <div class="crop-grid" id="cropContainer"></div>
         <pre class="markdown-output" id="markdownOutput"></pre>
       </div>
 
