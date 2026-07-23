@@ -1,5 +1,4 @@
 # Large model files (downloaded at runtime via CDN or HuggingFace)
-*.onnx
 *.tflite
 
 # Python
