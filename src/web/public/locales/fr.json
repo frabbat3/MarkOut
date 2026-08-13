@@ -17,8 +17,6 @@
   "footer.starRepo": "⭐ Mettre une étoile",
   "menu.aria": "Menu",
   "theme.aria": "Changer le thème clair/sombre",
-  "cookie.banner": "🍪 <strong>Pas de cookies, pas de suivi.</strong> MarkOut ne stocke que vos préférences locales (thème, mode GPU) dans votre navigateur. Rien n'est envoyé à un serveur.",
-  "cookie.accept": "Compris",
   "hero.title": "Du PDF au Markdown",
   "hero.sub": "Importez un PDF, extrayez le texte surligné et obtenez un document Markdown propre et prêt à l'emploi.",
   "hero.cta": "📄 Importer un PDF",

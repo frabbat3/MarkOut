@@ -17,8 +17,6 @@
   "footer.starRepo": "⭐ Stern geben",
   "menu.aria": "Menü",
   "theme.aria": "Helles/dunkles Design umschalten",
-  "cookie.banner": "🍪 <strong>Keine Cookies, kein Tracking.</strong> MarkOut speichert nur lokale Einstellungen (Design, GPU-Modus) in deinem Browser. Es wird nichts an einen Server gesendet.",
-  "cookie.accept": "Verstanden",
   "hero.title": "Vom PDF zum Markdown",
   "hero.sub": "Lade ein PDF hoch, extrahiere den markierten Text und erhalte ein sauberes, einsatzbereites Markdown-Dokument.",
   "hero.cta": "📄 PDF hochladen",

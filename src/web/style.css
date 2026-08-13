@@ -670,22 +670,6 @@ html[data-theme="dark"] .btn-primary { color: #0f1117; }
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* ─── Cookie / local-storage banner ─── */
-.cookie-banner {
-  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
-  z-index: 300;
-  display: flex; align-items: center; gap: 14px;
-  max-width: min(640px, calc(100vw - 28px));
-  padding: 14px 18px;
-  background: var(--card); border: 1px solid var(--border2);
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
-  font-size: 0.85rem; color: var(--text2);
-}
-.cookie-banner p { flex: 1; }
-.cookie-banner a { color: var(--brand-text); text-decoration: underline; }
-.cookie-banner .btn { flex-shrink: 0; }
-
 /* ─── UTILITY ─── */
 .hidden { display: none !important; }
 
@@ -833,9 +817,6 @@ html[data-theme="dark"] .lang-item.active { background: rgba(255,255,255,0.10); 
   .hero h1 { font-size: 1.35rem; }
   .hero-sub { font-size: 0.85rem; }
   .container { padding: 0 14px; }
-
-  .cookie-banner { bottom: 70px; padding: 12px 14px; }
-  .cookie-banner p { font-size: 0.8rem; }
 
   .upload-area { padding: 28px 12px; border-radius: 12px; }
   .upload-text { font-size: 0.95rem; }

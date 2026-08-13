@@ -9,7 +9,7 @@
  */
 import { DEBUG } from './config/pipeline.js';
 import { IS_MOBILE } from './config/device.js';
-import { initCookieBanner, initGitHubStars, registerServiceWorker, initLangSwitch } from './banner.js';
+import { initGitHubStars, registerServiceWorker, initLangSwitch } from './banner.js';
 import { initI18n } from './i18n.js';
 import { initThemeToggle, initHamburger, initDebugMode, updateAcceleratorBadge, initWebgpuToggle } from './presentation/dom.js';
 import { initTabs } from './presentation/resultRenderer.js';
@@ -29,7 +29,6 @@ initI18n();
 initDiagnostics();
 initThemeToggle();
 initHamburger();
-initCookieBanner();
 initGitHubStars();
 initLangSwitch();
 registerServiceWorker();

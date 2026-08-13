@@ -17,8 +17,6 @@
   "footer.starRepo": "⭐ Star the repo",
   "menu.aria": "Menu",
   "theme.aria": "Toggle dark theme",
-  "cookie.banner": "🍪 <strong>No cookies, no tracking.</strong> MarkOut stores only your local preferences (theme, GPU mode) in your browser. Nothing is sent to any server.",
-  "cookie.accept": "Got it",
   "hero.title": "From PDF to Markdown",
   "hero.sub": "Upload a PDF, extract highlighted text, and get a clean Markdown document ready to use.",
   "hero.cta": "📄 Upload a PDF",

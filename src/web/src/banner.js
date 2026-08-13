@@ -1,26 +1,6 @@
 /**
- * MarkOut — Banner informativo "no cookies".
- *
- * Il sito non usa cookie né tracker: solo localStorage per preferenze
- * locali (tema, GPU). Il banner è puramente informativo e si chiude
- * una sola volta (localStorage 'markout-cookie-banner').
- * Condiviso da main.js (index.html) e pages.js (pagine statiche).
+ * MarkOut — Utility condivise tra app e pagine statiche.
  */
-export function initCookieBanner() {
-  const banner = document.getElementById('cookieBanner');
-  const accept = document.getElementById('cookieAccept');
-  if (!banner || !accept) return;
-
-  try {
-    if (localStorage.getItem('markout-cookie-banner') === '1') return;
-  } catch { return; }
-
-  banner.classList.remove('hidden');
-  accept.addEventListener('click', () => {
-    banner.classList.add('hidden');
-    try { localStorage.setItem('markout-cookie-banner', '1'); } catch { /* noop */ }
-  });
-}
 
 /* ─── Contatore stelle GitHub ───
  * Mostra le stelle del repo nel pulsante del header (stile BentoPDF).

@@ -1,13 +1,13 @@
 /**
  * MarkOut — Script condiviso delle pagine statiche (About, Privacy, …).
  *
- * Gestisce: tema chiaro/scuro, hamburger menu, banner "no cookies",
+ * Gestisce: tema chiaro/scuro, hamburger menu,
  * CTA sticky mobile e il form di contatto (con stati di errore/loading).
  *
  * NB: la pagina principale (index.html) usa src/main.js; questo modulo
  * è indipendente dal bundle dell'app (niente PDF/ML).
  */
-import { initCookieBanner, initGitHubStars, registerServiceWorker, initLangSwitch } from './banner.js';
+import { initGitHubStars, registerServiceWorker, initLangSwitch } from './banner.js';
 import { initI18n } from './i18n.js';
 
 /* ─── Theme toggle (stessa logica di presentation/dom.js) ─── */
@@ -155,7 +155,6 @@ export function initContactForm() {
 initI18n();
 initThemeToggle();
 initHamburger();
-initCookieBanner();
 initGitHubStars();
 initLangSwitch();
 registerServiceWorker();
