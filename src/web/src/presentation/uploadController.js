@@ -151,9 +151,6 @@ async function processFile(f) {
     // Rilascio finale: modelli AI, canvas residui e blob del file.
     // Copre anche i percorsi d'errore (eccezioni a metà run).
     await releaseRunMemory();
-    if (completed && resultMeta) {
-      resultMeta.textContent += ' · 🧹 memoria rilasciata';
-    }
     endRun();
     _processing = false;
     fileInput.disabled = false;
