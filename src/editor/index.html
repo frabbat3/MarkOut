@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Mark2Text - Highlight Editor</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- ONNX Runtime Web (script tag, non ES module) -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/ort.min.js"></script>
+</head>
+<body>
+
+  <div id="toolbar">
+    <div class="group">
+      <button id="prev-pdf" title="PDF precedente (Freccia su)">&#9650;</button>
+      <span id="folder-name">-</span>
+      <button id="next-pdf" title="PDF successivo (Freccia giù)">&#9660;</button>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="group">
+      <button id="prev-page" title="Pagina precedente (Freccia sinistra)">&#9664;</button>
+      <span id="page-info">page -/-</span>
+      <button id="next-page" title="Pagina successiva (Freccia destra)">&#9654;</button>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="group">
+      <button id="zoom-out" title="Zoom out">-</button>
+      <span id="zoom-info">100%</span>
+      <button id="zoom-in" title="Zoom in">+</button>
+      <button id="zoom-fit" title="Adatta alla larghezza">Fit</button>
+      <button id="zoom-reset" title="Zoom 100%">1:1</button>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="group">
+      <button id="merge-btn" class="primary" title="Unisci i box che si sovrappongono >= 40%">Merge</button>
+      <button id="delete-btn" class="danger" title="Elimina box selezionato (Canc)">Delete</button>
+      <button id="undo-btn" title="Annulla (Ctrl+Z)">Undo</button>
+      <button id="save-btn" title="Salva subito">Save</button>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="group"><span id="count-info">0 box</span></div>
+
+    <span id="status">pronto</span>
+  </div>
+
+  <div id="process-bar" style="display:none;padding:8px 12px;background:#2b5ba8;color:#fff;font-size:13px;">
+    <span id="process-status">Elaborazione in corso…</span>
+    <span id="process-progress" style="margin-left:12px;">0/0</span>
+    <button id="process-abort-btn" style="margin-left:auto;background:#7a2b34;color:#fff;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;">Annulla</button>
+  </div>
+
+  <div id="hint">
+    <b>Frecce su/giù</b>: cambia PDF &nbsp;·&nbsp;
+    <b>Frecce destra/sinistra</b>: cambia pagina &nbsp;·&nbsp;
+    <b>Click su un box</b>: seleziona/sposta &nbsp;·&nbsp;
+    <b>Maniglie</b>: ridimensiona &nbsp;·&nbsp;
+    <b>Canc</b>: elimina &nbsp;·&nbsp;
+    <b>Due click sugli angoli</b>: nuovo box &nbsp;·&nbsp;
+    <b>Ctrl+Z</b>: annulla &nbsp;·&nbsp;
+    <b>Ctrl+rotellina</b>: zoom &nbsp;·&nbsp;
+    <b>Esc</b>: annulla creazione/selezione
+  </div>
+
+  <div id="page-view">
+    <div id="page-wrap">
+      <canvas id="pdf-canvas"></canvas>
+      <div id="box-layer"></div>
+      <div id="corner-marker"></div>
+      <div id="rubber"></div>
+    </div>
+    <div id="overlay"><div class="msg"><div id="overlay-msg">Caricamento…</div><div class="sub" id="overlay-sub"></div></div></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

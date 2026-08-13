@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comment ça marche — Du PDF au Markdown, étape par étape</title>
+  <meta name="description" content="Comment MarkOut extrait les surlignages des PDF : détection YOLO26, PaddleOCR, ordre de lecture et export Markdown — tout dans votre navigateur.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="canonical" href="https://frabbat3.github.io/MarkOut/fr/how-it-works.html">
+  <link rel="alternate" hreflang="en" href="https://frabbat3.github.io/MarkOut/en/how-it-works.html">
+  <link rel="alternate" hreflang="it" href="https://frabbat3.github.io/MarkOut/it/how-it-works.html">
+  <link rel="alternate" hreflang="de" href="https://frabbat3.github.io/MarkOut/de/how-it-works.html">
+  <link rel="alternate" hreflang="fr" href="https://frabbat3.github.io/MarkOut/fr/how-it-works.html">
+  <link rel="alternate" hreflang="es" href="https://frabbat3.github.io/MarkOut/es/how-it-works.html">
+  <link rel="alternate" hreflang="pt" href="https://frabbat3.github.io/MarkOut/pt/how-it-works.html">
+  <link rel="alternate" hreflang="x-default" href="https://frabbat3.github.io/MarkOut/en/how-it-works.html">
+  <script>
+    try {
+      if (localStorage.getItem('markout-theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.setAttribute('content', '#0f1117');
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://frabbat3.github.io/MarkOut/fr/how-it-works.html">
+  <meta property="og:title" content="Comment ça marche — Du PDF au Markdown, étape par étape">
+  <meta property="og:description" content="Comment MarkOut extrait les surlignages des PDF : détection YOLO26, PaddleOCR, ordre de lecture et export Markdown — tout dans votre navigateur.">
+  <meta property="og:image" content="https://frabbat3.github.io/MarkOut/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://api.github.com">
+  <link rel="preload" href="/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css?v=22">
+  <link rel="stylesheet" href="/pages.css?v=11">
+</head>
+<body>
+
+  <a class="skip-link" href="#main" data-i18n="skipLink">Aller au contenu</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a href="index.html"><img src="/logo.svg" alt="MarkOut logo — link to home" class="logo-icon" width="36" height="36"></a>
+        <a href="index.html" class="brand-name" translate="no">MarkOut</a>
+      </div>
+      <div class="header-right">
+        <nav class="header-nav" id="headerNav">
+          <a href="index.html" class="nav-link" data-i18n="nav.home">Accueil</a>
+          <a href="how-it-works.html" class="nav-link active" data-i18n="nav.howItWorks">Comment ça marche</a>
+          <a href="contact.html" class="nav-link" data-i18n="nav.contact">Contact</a>
+        </nav>
+        <a href="https://github.com/frabbat3/MarkOut" target="_blank" rel="noopener" class="gh-star-btn" id="ghStarBtn" aria-label="Mettre une étoile à MarkOut sur GitHub">
+          <svg class="gh-octo" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span class="gh-star-count" id="ghStarCount">–</span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Changer le thème clair/sombre">
+          <span class="icon icon-sun">☀️</span>
+          <span class="icon icon-moon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+  <section class="page-hero">
+    <div class="container">
+      <h1>Comment ça marche</h1>
+      <p>D'un PDF surligné à un Markdown propre en cinq étapes — sans que le document ne quitte jamais le navigateur.</p>
+    </div>
+  </section>
+
+  <section class="page-body">
+    <div class="container prose">
+
+      <ol class="step-list">
+        <li>
+          <h3>Vous importez le PDF</h3>
+          <p>Glissez ou sélectionnez un PDF avec du texte surligné. Le fichier est lu localement par PDF.js : rien n'est transmis — vous pouvez même tester avec vos documents les plus confidentiels.</p>
+        </li>
+        <li>
+          <h3>MarkOut choisit le meilleur chemin</h3>
+          <p>Chaque PDF — numérique ou scanné, avec ou sans annotations — passe par la même <strong>pipeline neuronale</strong> : un <strong>modèle YOLO26 personnalisé</strong> (ONNX auto-hébergé) détecte visuellement les zones surlignées sur la page rendue.</p>
+        </li>
+        <li>
+          <h3>L'ordre de lecture est reconstruit</h3>
+          <p>Les lignes de texte détectées sont organisées avec un <strong>algorithme de mise en page gap-tree</strong> : paragraphes et colonnes sont identifiés et chaque surlignage est assigné à la ligne qui le contient. Le résultat est un ordre de lecture correct — même pour les articles académiques à deux colonnes.</p>
+        </li>
+        <li>
+          <h3>L'OCR reconnaît le texte</h3>
+          <p>Chaque fragment surligné est recadré (redressé par ligne) et reconnu par <strong>PaddleOCR</strong>, exécuté localement via WebAssembly — ou WebGPU sur le bureau pour une inférence IA plus rapide. Le modèle de reconnaissance couvre l'anglais et les langues latines les plus courantes (it, fr, de, es, pt, nl…).</p>
+        </li>
+        <li>
+          <h3>Vous obtenez un Markdown propre</h3>
+          <p>Les surlignages sont fusionnés dans l'ordre de lecture en un document Markdown : front-matter YAML avec source et date, sections <code>## Page N</code> et identifiants citables stables (<code>[H12]</code>) par ligne — idéal pour les notes et les workflows LLM. Copiez le résultat ou téléchargez le fichier <code>.md</code>.</p>
+        </li>
+      </ol>
+
+      <h2>Ce qui rend la sortie fiable</h2>
+      <ul>
+        <li><strong>Une pipeline pour chaque PDF</strong> — le même flux de détection YOLO + OCR s'exécute sur chaque document, scanné ou numérique : comportement cohérent, aucun chemin caché.</li>
+        <li><strong>Mise en page déterministe</strong> — le même algorithme pilote la pipeline et les vues de débogage : aucune logique cachée.</li>
+        <li><strong>Indicateurs de qualité</strong> — les lignes que l'OCR ne peut pas lire sont marquées (<code>⚠️ no text</code>) au lieu d'être supprimées en silence, avec une section de notes d'extraction.</li>
+        <li><strong>Profil basse mémoire</strong> — sur mobile, les pages sont traitées une par une et les modèles sont libérés à la fin.</li>
+      </ul>
+
+      <div class="callout">
+        <strong>Transparent par conception.</strong> Dans les builds de débogage, l'interface montre chaque étape : boîtes YOLO, lignes détectées, régions et statut OCR par fragment — pour vérifier exactement ce qui s'est passé avec votre PDF.
+      </div>
+
+      <div class="hero-cta" style="margin: 10px 0 30px;">
+        <a href="index.html#upload" class="btn btn-primary btn-lg">📄 Essayer maintenant</a>
+      </div>
+
+    </div>
+  </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <img src="/logo.svg" alt="MarkOut" class="footer-logo" width="36" height="36">
+        <span class="footer-brand" translate="no">MarkOut</span>
+      </div>
+      <div class="footer-right">
+        <div class="footer-links">
+          <span class="footer-heading" data-i18n="footer.product">Produit</span>
+          <a href="about.html" data-i18n="footer.about">À propos</a>
+          <a href="services.html" data-i18n="footer.services">Fonctionnalités</a>
+          <a href="how-it-works.html" data-i18n="footer.howItWorks">Comment ça marche</a>
+        </div>
+        <div class="footer-links">
+          <span class="footer-heading" data-i18n="footer.legal">Légal</span>
+          <a href="privacy.html" data-i18n="footer.privacy">Confidentialité</a>
+          <a href="terms.html" data-i18n="footer.terms">Conditions</a>
+          <a href="contact.html" data-i18n="footer.contact">Contact</a>
+        </div>
+        <div class="footer-links">
+          <span class="footer-heading" data-i18n="footer.community">Communauté</span>
+          <a href="https://github.com/frabbat3/MarkOut" target="_blank" rel="noopener" data-i18n="footer.github">GitHub</a>
+          <a href="https://github.com/frabbat3/MarkOut/issues/new" target="_blank" rel="noopener" data-i18n="footer.reportBug">Signaler un bug</a>
+          <a href="https://github.com/frabbat3/MarkOut/stargazers" target="_blank" rel="noopener" data-i18n="footer.starRepo">⭐ Mettre une étoile</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="lang-switcher" id="language-switcher">
+        <button type="button" class="lang-btn" id="langBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="lang-name" id="langCurrent">Français</span>
+          <svg class="lang-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="lang-menu hidden" id="langMenu" role="menu">
+          <div class="lang-search-wrap">
+            <input type="search" class="lang-search" placeholder="Rechercher une langue…" aria-label="Rechercher une langue…">
+          </div>
+          <div class="lang-list" role="none">
+            <button type="button" class="lang-item" role="menuitem" data-lang="en" data-search-key="english en">English</button>
+            <button type="button" class="lang-item" role="menuitem" data-lang="it" data-search-key="italiano it">Italiano</button>
+            <button type="button" class="lang-item" role="menuitem" data-lang="de" data-search-key="deutsch de">Deutsch</button>
+            <button type="button" class="lang-item lang-item active" role="menuitem" data-lang="fr" data-search-key="français fr">Français</button>
+            <button type="button" class="lang-item" role="menuitem" data-lang="es" data-search-key="español es">Español</button>
+            <button type="button" class="lang-item" role="menuitem" data-lang="pt" data-search-key="português pt">Português</button>
+          </div>
+          <p class="lang-empty hidden">Aucune langue trouvée</p>
+        </div>
+      </div>
+    </div>
+
+  </footer>
+
+  <div class="sticky-cta" id="stickyCta">
+    <a href="index.html#upload" class="btn btn-primary btn-block" id="stickyCtaBtn" data-i18n="stickyCta" data-i18n-attr="aria-label" aria-label="📄 Importer un PDF — c'est gratuit">📄 Importer un PDF — c'est gratuit</a>
+  </div>
+
+  <div class="cookie-banner hidden" id="cookieBanner" role="dialog" aria-label="Langue" aria-live="polite">
+    <p data-i18n="cookie.banner">🍪 <strong>Pas de cookies, pas de suivi.</strong> MarkOut ne stocke que vos préférences locales (thème, mode GPU) dans votre navigateur. Rien n'est envoyé à un serveur.</p>
+    <button class="btn btn-sm" id="cookieAccept" data-i18n="cookie.accept">Compris</button>
+  </div>
+
+  <script type="module" src="/src/pages.js"></script>
+</body>
+</html>

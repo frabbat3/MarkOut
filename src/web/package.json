@@ -1,0 +1,26 @@
+{
+  "name": "markout-paddleocr",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@paddleocr/paddleocr-js": "^0.4.2",
+    "onnxruntime-web": "^1.22.0",
+    "pdfjs-dist": "^4.5.136"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1",
+    "ws": "^8.21.3"
+  },
+  "license": "AGPL-3.0",
+  "description": "Privacy-first PDF highlight extractor: highlighted text to LLM-ready Markdown, 100% in the browser.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/frabbat3/MarkOut.git"
+  }
+}

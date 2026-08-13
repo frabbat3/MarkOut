@@ -1,0 +1,216 @@
+/* ═══════════════════════════════════════════════
+   MarkOut — Stili pagine statiche (About, Privacy, …)
+   Usato insieme a style.css (header/footer/tema condivisi).
+   ═══════════════════════════════════════════════ */
+
+/* ─── Page hero ─── */
+.page-hero {
+  text-align: center;
+  padding: 52px 0 34px;
+}
+.page-hero h1 {
+  font-size: 2.1rem; font-weight: 800;
+  color: var(--text); letter-spacing: -0.5px;
+  margin-bottom: 10px;
+}
+.page-hero p { font-size: 1.05rem; color: var(--text2); max-width: 620px; margin: 0 auto; }
+
+/* ─── Prose (contenuto delle pagine) ─── */
+.page-body { padding: 10px 0 56px; }
+.prose { max-width: 720px; margin: 0 auto; }
+.prose h2 {
+  font-size: 1.35rem; font-weight: 700; color: var(--text);
+  margin: 38px 0 12px; padding-top: 8px;
+  border-top: 1px solid var(--border); padding-top: 26px;
+}
+.prose h2:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.prose h3 { font-size: 1.05rem; font-weight: 600; color: var(--text); margin: 22px 0 8px; }
+.prose p { color: var(--text2); margin-bottom: 14px; }
+.prose ul, .prose ol { color: var(--text2); margin: 0 0 16px 22px; }
+.prose li { margin-bottom: 8px; }
+.prose li strong, .prose p strong { color: var(--text); }
+.prose a { color: var(--brand-text); }
+.prose code {
+  background: var(--brand-lighter); color: var(--brand-text);
+  padding: 2px 6px; border-radius: 5px; font-size: 0.88em;
+}
+.prose .muted { color: var(--text3); font-size: 0.85rem; }
+.prose .last-updated {
+  display: inline-block; margin-top: 6px;
+  font-size: 0.8rem; color: var(--text3);
+  background: var(--card2); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 20px;
+}
+
+/* ─── Callout ─── */
+.callout {
+  background: var(--brand-lighter);
+  border: 1px solid var(--brand-border);
+  border-left: 4px solid var(--brand);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 18px 0;
+  color: var(--text2); font-size: 0.92rem;
+}
+.callout strong { color: var(--brand-text); }
+
+/* ─── Card grid (Services / About) ─── */
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px; margin: 24px 0;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); border-color: var(--brand-border); }
+.card .card-icon { font-size: 1.6rem; display: block; margin-bottom: 10px; }
+.card h3 { font-size: 1.02rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.card p { font-size: 0.88rem; color: var(--text2); }
+
+/* ─── Pills (stack tecnico) ─── */
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 8px; }
+.pill {
+  background: var(--brand-lighter); color: var(--brand-text);
+  border: 1px solid var(--brand-border);
+  font-size: 0.78rem; font-weight: 500;
+  padding: 4px 12px; border-radius: 20px;
+}
+
+/* ─── Step list (How it works) ─── */
+.step-list { list-style: none; margin-left: 0 !important; counter-reset: step; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 4px 0 18px 52px;
+  border-left: 2px solid var(--border);
+  margin-left: 18px;
+}
+.step-list li:last-child { border-left-color: transparent; padding-bottom: 4px; }
+.step-list li::before {
+  content: counter(step);
+  position: absolute; left: -21px; top: 0;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--step-bg); color: #fff;
+  border-radius: 50%;
+  font-weight: 700; font-size: 0.95rem;
+  border: 3px solid var(--bg);
+}
+
+/* ─── Contact form ─── */
+.contact-form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px 28px;
+  margin: 24px 0;
+}
+.form-field { margin-bottom: 18px; }
+.form-field label {
+  display: block; font-size: 0.85rem; font-weight: 600;
+  color: var(--text); margin-bottom: 6px;
+}
+.form-field label .req { color: var(--error); }
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.92rem; font-family: inherit;
+  color: var(--text);
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-field input:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-light);
+  background: var(--card);
+}
+.form-field textarea { min-height: 130px; resize: vertical; }
+.form-field .field-error {
+  display: none;
+  margin-top: 6px; font-size: 0.8rem; color: var(--error);
+}
+.form-field.has-error input,
+.form-field.has-error textarea {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.12);
+}
+html[data-theme="dark"] .form-field.has-error input,
+html[data-theme="dark"] .form-field.has-error textarea {
+  box-shadow: 0 0 0 3px rgba(242, 139, 130, 0.15);
+}
+.form-field.has-error .field-error { display: block; }
+.form-hint { font-size: 0.8rem; color: var(--text3); margin-top: -8px; margin-bottom: 18px; }
+.form-status {
+  display: none;
+  margin-top: 14px; padding: 12px 16px;
+  border-radius: 10px; font-size: 0.88rem;
+}
+.form-status.visible { display: block; }
+.form-status.error { background: rgba(217, 48, 37, 0.08); border: 1px solid var(--error); color: var(--error); }
+html[data-theme="dark"] .form-status.error { background: rgba(242, 139, 130, 0.10); }
+.form-status.success { background: var(--brand-lighter); border: 1px solid var(--brand-border); color: var(--brand-text); }
+
+/* ─── Button loading state ─── */
+.btn.loading { pointer-events: none; opacity: 0.75; }
+.btn .spinner {
+  display: none;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+html[data-theme="dark"] .btn-primary .spinner { border-color: rgba(15,17,23,0.35); border-top-color: #0f1117; }
+.btn.loading .spinner { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── 404 page ─── */
+.error-page { text-align: center; padding: 80px 20px 100px; }
+.error-page .error-code {
+  font-size: 6rem; font-weight: 800; line-height: 1;
+  background: linear-gradient(135deg, var(--brand), #8ab4f8);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; letter-spacing: -2px;
+}
+.error-page h1 { font-size: 1.5rem; margin: 18px 0 10px; color: var(--text); }
+.error-page p { color: var(--text2); max-width: 460px; margin: 0 auto 26px; }
+.error-page .hero-cta { justify-content: center; }
+
+/* ─── Thank-you page ─── */
+.thanks-page { text-align: center; padding: 70px 20px 90px; }
+.thanks-icon {
+  width: 84px; height: 84px; margin: 0 auto 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.4rem;
+  background: var(--brand-lighter);
+  border: 1px solid var(--brand-border);
+  border-radius: 50%;
+}
+.thanks-page h1 { font-size: 1.7rem; color: var(--text); margin-bottom: 12px; }
+.thanks-page p { color: var(--text2); max-width: 480px; margin: 0 auto 26px; }
+.thanks-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ─── Contact info ─── */
+.contact-info { margin-top: 26px; }
+.contact-info h2 { font-size: 1.1rem; color: var(--text); margin-bottom: 12px; }
+.contact-info ul { list-style: none; margin-left: 0 !important; }
+.contact-info li { display: flex; gap: 10px; align-items: baseline; margin-bottom: 10px; }
+.contact-info li .ico { flex-shrink: 0; }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .page-hero { padding: 36px 0 24px; }
+  .page-hero h1 { font-size: 1.6rem; }
+  .page-hero p { font-size: 0.95rem; }
+  .contact-form { padding: 20px 16px; }
+  .card-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,148 @@
+:root{
+  --bg:#1b1d22;
+  --panel:#262a31;
+  --panel-2:#2f343d;
+  --border:#3a4150;
+  --text:#e7e9ee;
+  --muted:#9aa1ad;
+  --accent:#5b9dff;
+  --ok:#39d98a;
+  --warn:#ffb454;
+  --err:#ff5d5d;
+  /* box colors: bright cyan with a dark halo so it contrasts on any bg */
+  --box-fill: rgba(0, 229, 255, 0.18);
+  --box-border: #00e5ff;
+  --box-halo: rgba(0,0,0,0.65);
+  --sel-fill: rgba(255, 64, 112, 0.20);
+  --sel-border: #ff3b6b;
+  --sel-halo: rgba(0,0,0,0.85);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg);color:var(--text);
+  font:13px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  display:flex;flex-direction:column;overflow:hidden;
+  user-select:none;
+}
+
+/* ---- process bar ---- */
+#process-bar{
+  display:none;align-items:center;gap:10px;
+  padding:8px 12px;background:#1a3a6a;color:#fff;font-size:13px;border-bottom:1px solid #2b5ba8;
+}
+#process-bar #process-status{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#process-bar #process-progress{font-variant-numeric:tabular-nums;color:#8ab4ff;min-width:60px;text-align:right}
+
+/* ---- toolbar ---- */
+#toolbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border);
+}
+#toolbar .group{display:flex;align-items:center;gap:6px}
+#toolbar .sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+#toolbar label{color:var(--muted);font-size:12px}
+#folder-name{width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-weight:600;color:var(--text);flex-shrink:0;text-align:left}
+#page-info{width:84px;text-align:center;flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--muted)}
+#zoom-info{width:52px;text-align:center;flex-shrink:0;font-variant-numeric:tabular-nums;color:var(--muted)}
+#count-info{width:168px;text-align:left;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-variant-numeric:tabular-nums;color:var(--muted)}
+/* fixed widths on every variable-length text element so the toolbar never
+   changes height (which would shift the page vertically and corrupt the
+   normalized box coordinates during drags / two-click creation) */
+
+button{
+  background:var(--panel-2);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;
+}
+button:hover{background:#3a414d;border-color:#4a5260}
+button:active{transform:translateY(1px)}
+button.primary{background:#2b5ba8;border-color:#3a72c8;color:#fff}
+button.primary:hover{background:#3468bd}
+button.danger{border-color:#7a2b34;color:#ff8a93}
+button:disabled{opacity:.45;cursor:not-allowed}
+.kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-bottom-width:2px;
+  border-radius:4px;background:var(--bg);font-size:11px;color:var(--muted)}
+
+#status{margin-left:auto;width:196px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#status.unsaved{color:var(--warn)}
+#status.saving{color:var(--accent)}
+#status.saved{color:var(--ok)}
+#status.error{color:var(--err)}
+
+/* ---- hint bar ---- */
+#hint{
+  padding:5px 12px;background:var(--panel-2);border-bottom:1px solid var(--border);
+  color:var(--muted);font-size:12px;
+}
+#hint b{color:var(--text)}
+
+/* ---- page view ---- */
+#page-view{
+  flex:1;overflow:auto;position:relative;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0) 0 0/22px 22px,
+    #15171c;
+}
+#page-wrap{
+  position:relative;margin:24px auto;display:block;
+  box-shadow:0 6px 30px rgba(0,0,0,.55);
+  background:#fff;
+}
+#pdf-canvas{display:block;width:100%;height:100%}
+#box-layer{position:absolute;inset:0;cursor:crosshair}
+
+/* ---- boxes ---- */
+.box{
+  position:absolute;
+  background:var(--box-fill);
+  border:2px solid var(--box-border);
+  box-shadow:0 0 0 1px var(--box-halo); /* halo for contrast on any bg */
+  cursor:move;
+}
+.box:hover{background:rgba(0,229,255,0.28)}
+.box.selected{
+  background:var(--sel-fill);
+  border-color:var(--sel-border);
+  box-shadow:0 0 0 2px var(--sel-halo), 0 0 10px rgba(255,59,107,.55);
+  z-index:5;
+}
+
+.handle{
+  position:absolute;width:11px;height:11px;background:#fff;
+  border:2px solid var(--sel-border);border-radius:2px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.6);
+}
+.handle.nw{left:-7px;top:-7px;cursor:nwse-resize}
+.handle.n {left:50%;top:-7px;transform:translateX(-50%);cursor:ns-resize}
+.handle.ne{right:-7px;top:-7px;cursor:nesw-resize}
+.handle.e {right:-7px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.handle.se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.handle.s {left:50%;bottom:-7px;transform:translateX(-50%);cursor:ns-resize}
+.handle.sw{left:-7px;bottom:-7px;cursor:nesw-resize}
+.handle.w {left:-7px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+
+/* creation markers */
+#corner-marker{
+  position:absolute;width:13px;height:13px;border-radius:50%;
+  background:var(--sel-border);box-shadow:0 0 0 2px rgba(0,0,0,.7),0 0 10px rgba(255,59,107,.8);
+  transform:translate(-50%,-50%);display:none;z-index:6;pointer-events:none;
+}
+#rubber{
+  position:absolute;border:2px dashed var(--sel-border);
+  background:rgba(255,59,107,.12);display:none;z-index:4;pointer-events:none;
+}
+
+/* loading / error overlay */
+#overlay{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(20,22,27,.7);color:var(--text);font-size:15px;z-index:20;
+}
+#overlay.show{display:flex}
+#overlay .msg{text-align:center}
+#overlay .sub{color:var(--muted);font-size:12px;margin-top:6px}
+
+.empty{padding:40px;color:var(--muted);text-align:center}

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# No sensitive paths: the whole site is client-side (no backend).
+# AI models and WASM assets are allowed (needed by the tool).
+
+Sitemap: https://frabbat3.github.io/MarkOut/sitemap.xml

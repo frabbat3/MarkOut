@@ -1,0 +1,48 @@
+# Data directory (models, datasets, processed files)
+/data/
+
+# Node.js
+node_modules/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+**/venv/
+**/.venv/
+.env/
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Editor tool: cartelle di lavoro locali
+src/editor/batch_output*/
+src/editor/pdf/
+
+# File di test locali
+_test.pdf
+
+# Non pubblicati: codice di test e tooling interno
+/src/web/test/
+/src/colore/
+/tools/
