@@ -132,6 +132,7 @@
           <button class="tab-btn active" data-view="bbox">📄 Bounding Box</button>
           <button class="tab-btn" data-view="crops">✂️ Highlights</button>
           <button class="tab-btn" data-view="markdown">📝 Markdown</button>
+          <button class="tab-btn" data-view="edit" data-i18n="edit.tab">✏️ Editar resaltados</button>
           <button class="tab-btn" data-view="yolo">🔲 YOLO Fragments</button>
           <button class="tab-btn" data-view="rows">📏 YOLO Rows</button>
           <button class="tab-btn" data-view="allrows">🗂️ All Det Rows</button>
@@ -145,6 +146,22 @@
         <div class="row-grid hidden" id="allRowsContainer"></div>
         <pre class="debug-report hidden" id="debugReport"></pre>
         <pre class="markdown-output" id="markdownOutput"></pre>
+
+        <!-- Highlight box editor (edit / re-process the boxes) -->
+        <div class="box-editor hidden" id="boxEditor">
+          <div class="editor-toolbar">
+            <button class="btn btn-sm" id="editPrev" data-i18n="edit.prev">◀ Página anterior</button>
+            <span class="editor-page" id="editPageLabel" data-i18n="edit.page">Page 1/1</span>
+            <button class="btn btn-sm" id="editNext" data-i18n="edit.next">Página siguiente ▶</button>
+            <span class="editor-sep"></span>
+            <button class="btn btn-sm" id="editUndo" data-i18n="edit.undo">↩️ Deshacer</button>
+            <button class="btn btn-sm" id="editRedo" data-i18n="edit.redo">↪️ Rehacer</button>
+            <button class="btn btn-sm" id="editDelete" data-i18n="edit.delete">🗑 Eliminar selección</button>
+            <button class="btn btn-primary btn-sm" id="editConfirm" data-i18n="edit.confirm">✅ Confirmar y reprocesar</button>
+          </div>
+          <p class="editor-hint" data-i18n="edit.hint">Arrastra sobre zonas vacías para añadir una caja · arrastra una caja para moverla · arrastra bordes o esquinas para redimensionarla · Supr elimina la caja seleccionada · Ctrl+Z / Ctrl+Mayús+Z deshacer/rehacer · ←/→ cambian de página. Luego confirma para reprocesar toda la pipeline con tus cajas.</p>
+          <div class="editor-canvas-wrap"><canvas id="editCanvas"></canvas></div>
+        </div>
       </div>
 
       <div class="no-highlights hidden" id="noHighlights">

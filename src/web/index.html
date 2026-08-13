@@ -152,6 +152,7 @@
           <button class="tab-btn active" data-view="bbox">📄 Bounding Box</button>
           <button class="tab-btn" data-view="crops">✂️ Highlights</button>
           <button class="tab-btn" data-view="markdown">📝 Markdown</button>
+          <button class="tab-btn" data-view="edit" data-i18n="edit.tab">✏️ Edit highlights</button>
           <button class="tab-btn" data-view="yolo">🔲 YOLO Fragments</button>
           <button class="tab-btn" data-view="rows">📏 YOLO Rows</button>
           <button class="tab-btn" data-view="allrows">🗂️ All Det Rows</button>
@@ -178,6 +179,22 @@
 
         <!-- Markdown output -->
         <pre class="markdown-output" id="markdownOutput"></pre>
+
+        <!-- Highlight box editor (edit / re-process the boxes) -->
+        <div class="box-editor hidden" id="boxEditor">
+          <div class="editor-toolbar">
+            <button class="btn btn-sm" id="editPrev" data-i18n="edit.prev">◀ Previous page</button>
+            <span class="editor-page" id="editPageLabel" data-i18n="edit.page">Page 1/1</span>
+            <button class="btn btn-sm" id="editNext" data-i18n="edit.next">Next page ▶</button>
+            <span class="editor-sep"></span>
+            <button class="btn btn-sm" id="editUndo" data-i18n="edit.undo">↩️ Undo</button>
+            <button class="btn btn-sm" id="editRedo" data-i18n="edit.redo">↪️ Redo</button>
+            <button class="btn btn-sm" id="editDelete" data-i18n="edit.delete">🗑 Delete selected</button>
+            <button class="btn btn-primary btn-sm" id="editConfirm" data-i18n="edit.confirm">✅ Confirm & re-process</button>
+          </div>
+          <p class="editor-hint" data-i18n="edit.hint">Drag on empty areas to add a box · drag a box to move it · drag its edges or corners to resize · Del removes the selected box · Ctrl+Z / Ctrl+Shift+Z undo/redo · ←/→ switch pages. Then confirm to re-run the whole pipeline with your boxes.</p>
+          <div class="editor-canvas-wrap"><canvas id="editCanvas"></canvas></div>
+        </div>
       </div>
 
       <!-- No highlights -->

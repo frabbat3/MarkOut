@@ -9,6 +9,20 @@
  */
 const LOCALES = ['en', 'it', 'de', 'fr', 'es', 'pt'];
 
+/** Dizionario corrente (per la funzione t() dell'UI dinamica). */
+let _dict = null;
+
+/**
+ * Traduce una chiave per l'UI dinamica (elementi creati a runtime).
+ * @param {string} key
+ * @param {string} [fallback]
+ * @returns {string}
+ */
+export function t(key, fallback = '') {
+  const v = _dict && typeof _dict[key] === 'string' ? _dict[key] : null;
+  return v ?? (fallback || key);
+}
+
 /**
  * Lingua corrente, decisa DALL'URL (unica fonte di verità):
  * root = inglese, /xx/ = altre lingue. Niente fallback su browser o
@@ -45,6 +59,7 @@ export async function initI18n() {
     const res = await fetch(dictUrl(locale), { cache: 'no-cache' });
     if (!res.ok) return;
     const dict = await res.json();
+    _dict = dict;
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const val = dict[el.dataset.i18n];
       if (typeof val === 'string') el.innerHTML = val;

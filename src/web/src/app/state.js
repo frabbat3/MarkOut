@@ -13,6 +13,24 @@ export let cropData = [];
 /** @type {Array} dati per pagina: canvas, boxes, detRects, ecc. */
 export let pageData = [];
 
+/** @type {Array} baseline box per pagina per l'editor "Edit highlights" */
+export let editorPages = [];
+
+/**
+ * Aggiunge una pagina all'editor box (baseline YOLO/editate).
+ * @param {{pageNum:number,w:number,h:number,boxes:Array}} p
+ */
+export function addEditorPage(p) {
+  editorPages.push(p);
+}
+
+/**
+ * Resetta editorPages.
+ */
+export function resetEditorPages() {
+  editorPages = [];
+}
+
 /** @type {Object} info di sessione raccolta durante la pipeline (per il report debug) */
 export const session = {};
 
@@ -69,4 +87,5 @@ export function resetAll() {
   currentFile = null;
   cropData = [];
   pageData = [];
+  editorPages = [];
 }

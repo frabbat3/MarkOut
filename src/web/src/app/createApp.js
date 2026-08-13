@@ -15,6 +15,7 @@ import { extractCropCanvas, extractDeskewedCropCanvas, downscaleForOcr } from '.
 import {
   currentFile, cropData, pageData,
   setCropData, resetCropData, resetPageData, addPageData,
+  addEditorPage, resetEditorPages,
 } from './state.js';
 import { showResult, switchView } from '../presentation/resultRenderer.js';
 import { setProgress, showLoading, hideAll, getSelectedLang, updateAcceleratorBadge } from '../presentation/dom.js';
@@ -23,6 +24,33 @@ import { IS_MOBILE } from '../config/device.js';
 import { setSessionInfo } from './state.js';
 import { warmup } from '../domain/wordGlue.js';
 import { trackCanvasReleased, logMem, updateRunPhase } from './diagnostics.js';
+
+/* ─── PDF editabile (tab "Edit highlights") ───
+ * Dopo una run il documento pdf.js resta in memoria per permettere
+ * all'editor di ri-renderizzare le pagine e di rielaborare la
+ * pipeline con i box modificati. Il proxy viene distrutto solo
+ * quando arriva un nuovo PDF (o in caso di errore).
+ */
+let _editablePdf = null;
+
+/**
+ * Imposta il PDF correntemente editabile (distrugge il precedente).
+ * @param {PDFDocumentProxy|null} pdf
+ */
+export function setEditablePdf(pdf) {
+  if (_editablePdf && _editablePdf !== pdf) {
+    try { _editablePdf.destroy(); } catch (e) { /* noop */ }
+  }
+  _editablePdf = pdf;
+}
+
+/**
+ * Il PDF editabile corrente (null se nessuna run completata).
+ * @returns {PDFDocumentProxy|null}
+ */
+export function getEditablePdf() {
+  return _editablePdf;
+}
 
 /**
  * Yield al browser per aggiornamenti UI.
@@ -78,10 +106,15 @@ function polyToBox(poly, fallback) {
  * nativo separato per i PDF con annotazioni.
  *
  * @param {PDFDocumentProxy} pdf
+ * @param {{editedBoxes?: Object<number, Array>}} [options] — se presente,
+ *   salta la detection YOLO e usa questi box ({x1,y1,x2,y2,score?}) per pagina.
  */
-export async function processPDF(pdf) {
+export async function processPDF(pdf, options = {}) {
   resetCropData();
   resetPageData();
+  resetEditorPages();
+
+  const editedBoxes = options.editedBoxes || null;
 
   // Preload del dizionario per il gluaggio parole (chunk lazy): lo
   // scarichiamo DURANTE l'OCR così il markdown è pronto senza attese.
@@ -94,9 +127,9 @@ export async function processPDF(pdf) {
   // PaddleOCR viene caricato lazily alla prima pagina con evidenziature
   // (processPage): evita ~30MB di modelli su PDF senza evidenziature.
   if (IS_MOBILE) {
-    await neuralPipelineMobile(pdf, totalPages);
+    await neuralPipelineMobile(pdf, totalPages, editedBoxes);
   } else {
-    await neuralPipeline(pdf, totalPages);
+    await neuralPipeline(pdf, totalPages, editedBoxes);
   }
 
   // Rilascia i canvas (memoria GPU) dei frammenti
@@ -118,20 +151,30 @@ export async function processPDF(pdf) {
  *
  * @param {PDFDocumentProxy} pdf
  * @param {number} totalPages
+ * @param {Object<number, Array>|null} editedBoxes
  */
-async function neuralPipeline(pdf, totalPages) {
-  /* ── Fase 2a: YOLO detection su tutte le pagine ── */
-  setProgress('⏳ Loading YOLO model…', 0, 1, [5, 5]);
-  await yieldToBrowser();
-  await loadModel();  // carica YOLO
-  updateAcceleratorBadge(getProvider());
-  setSessionInfo({ yoloProvider: getProvider() });
-  setProgress('⏳ Loading YOLO model…', 1, 1, [5, 5]);
+async function neuralPipeline(pdf, totalPages, editedBoxes) {
+  /* ── Fase 2a: YOLO detection su tutte le pagine (saltata se i box
+     sono stati editati dall'utente) ── */
+  if (editedBoxes) {
+    setSessionInfo({ yoloProvider: 'edited', boxesSource: 'user-edited' });
+  } else {
+    setProgress('⏳ Loading YOLO model…', 0, 1, [5, 5]);
+    await yieldToBrowser();
+    await loadModel();  // carica YOLO
+    updateAcceleratorBadge(getProvider());
+    setSessionInfo({ yoloProvider: getProvider() });
+    setProgress('⏳ Loading YOLO model…', 1, 1, [5, 5]);
+  }
 
   for (let p = 1; p <= totalPages; p++) {
     const pctLo = 5, pctHi = 60;
-    setProgress(`📄 Page ${p}/${totalPages} — detecting highlights…`, p, totalPages, [pctLo, pctHi]);
-    const r = await processPage(pdf, p);
+    const label = editedBoxes
+      ? `📄 Page ${p}/${totalPages} — layout & crops…`
+      : `📄 Page ${p}/${totalPages} — detecting highlights…`;
+    setProgress(label, p, totalPages, [pctLo, pctHi]);
+    const r = await processPage(pdf, p, editedBoxes ? editedBoxes[p] : undefined);
+    addEditorPage(r.editorPage);
     setCropData([...cropData, ...r.fragments]);
   }
 
@@ -184,14 +227,19 @@ async function neuralPipeline(pdf, totalPages) {
  *
  * @param {PDFDocumentProxy} pdf
  * @param {number} totalPages
+ * @param {Object<number, Array>|null} editedBoxes
  */
-async function neuralPipelineMobile(pdf, totalPages) {
-  setProgress('⏳ Loading YOLO model…', 0, 1, [0, 2]);
-  await loadModel();
-  updateAcceleratorBadge(getProvider());
-  setSessionInfo({ yoloProvider: getProvider() });
-  await yieldToBrowser();
-  logMem('[MOBILE] YOLO caricato');
+async function neuralPipelineMobile(pdf, totalPages, editedBoxes) {
+  if (editedBoxes) {
+    setSessionInfo({ yoloProvider: 'edited', boxesSource: 'user-edited' });
+  } else {
+    setProgress('⏳ Loading YOLO model…', 0, 1, [0, 2]);
+    await loadModel();
+    updateAcceleratorBadge(getProvider());
+    setSessionInfo({ yoloProvider: getProvider() });
+    await yieldToBrowser();
+    logMem('[MOBILE] YOLO caricato');
+  }
 
   const allFragments = [];
 
@@ -201,10 +249,14 @@ async function neuralPipelineMobile(pdf, totalPages) {
 
     // ── YOLO + layout + crop (questa pagina) ──
     updateRunPhase('yolo', `page ${p}/${totalPages}`);
-    setProgress(`📄 Page ${p}/${totalPages} — detecting highlights…`, p, totalPages, [pctLo, pctHi]);
+    const label = editedBoxes
+      ? `📄 Page ${p}/${totalPages} — layout & crops…`
+      : `📄 Page ${p}/${totalPages} — detecting highlights…`;
+    setProgress(label, p, totalPages, [pctLo, pctHi]);
     await yieldToBrowser();
-    const r = await processPage(pdf, p);
+    const r = await processPage(pdf, p, editedBoxes ? editedBoxes[p] : undefined);
     const pageFragments = r.fragments;
+    addEditorPage(r.editorPage);
     allFragments.push(...pageFragments);
     logMem(`[MOBILE] Page ${p}: YOLO ok, ${pageFragments.length} frammenti`);
 
@@ -265,12 +317,37 @@ async function ensureDetModel() {
  *
  * @param {PDFDocumentProxy} pdf
  * @param {number} pageNum
- * @returns {Promise<{ fragments: Array, boxes: Array }>}
+ * @param {Array<{x1,y1,x2,y2,score?}>} [providedBoxes] — box forniti
+ *   dall'editor (skip YOLO)
+ * @returns {Promise<{ fragments: Array, boxes: Array, editorPage: Object }>}
  */
-async function processPage(pdf, pageNum) {
+async function processPage(pdf, pageNum, providedBoxes) {
   const pageCanvas = await renderPageToCanvas(pdf, pageNum);
 
-  const { rawBoxes, boxes, mergedBoxes } = await runYOLOInference(pageCanvas);
+  let rawBoxes, boxes, mergedBoxes;
+  if (providedBoxes) {
+    // Box editati dall'utente: sono già il risultato finale.
+    boxes = providedBoxes.map(b => ({
+      x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2,
+      score: Number.isFinite(b.score) ? b.score : 1.0,
+    }));
+    rawBoxes = boxes.slice();
+    mergedBoxes = boxes.slice();
+  } else {
+    ({ rawBoxes, boxes, mergedBoxes } = await runYOLOInference(pageCanvas));
+  }
+
+  // Baseline per l'editor "Edit highlights" (sempre, anche in produzione):
+  // i box che alimentano il layout, in coordinate pagina originali.
+  const editorPage = {
+    pageNum,
+    w: pageCanvas.width,
+    h: pageCanvas.height,
+    boxes: mergedBoxes.map(b => ({
+      x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2,
+      score: Number.isFinite(b.score) ? b.score : 1.0,
+    })),
+  };
 
   // Se non ci sono evidenziature YOLO su questa pagina, skippa la detection
   // PP-OCRv6 e il layout ordinamento (risparmia ~0.3–0.8s per pagina vuota)
@@ -442,7 +519,7 @@ async function processPage(pdf, pageNum) {
     orderedBoxes = flattenOrderedBoxes(orderedBoxes, boxes, pageSlope);
   }
 
-  return { fragments, boxes: orderedBoxes };
+  return { fragments, boxes: orderedBoxes, editorPage };
 }
 
 /**
@@ -477,13 +554,10 @@ export async function releaseRunMemory() {
       }
     }
   } catch (e) { console.warn('[MEM] release canvas:', e.message); }
-  try {
-    if (currentFile) {
-      // Mantieni il nome (serve a Copia/Scarica .md), rilascia il blob
-      setCurrentFile({ name: currentFile.name, size: currentFile.size, type: currentFile.type || '' });
-    }
-  } catch (e) { /* noop */ }
-  logMem('[MEM] Fine run — modelli, canvas e file rilasciati');
+  // Nota: il File e il pdf.js proxy restano in memoria apposta —
+  // servono alla tab "Edit highlights" per ri-renderizzare le pagine
+  // e rielaborare la pipeline con i box modificati.
+  logMem('[MEM] Fine run — modelli e canvas rilasciati (PDF editabile mantenuto)');
 }
 
 /**

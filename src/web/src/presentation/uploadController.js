@@ -3,10 +3,11 @@
  */
 import { uploadArea, fileInput, showLoading, hideAll, errorMsg, error, resultMeta } from './dom.js';
 import { setCurrentFile, resetCropData } from '../app/state.js';
-import { processPDF, showFinalResult, releaseRunMemory } from '../app/createApp.js';
+import { processPDF, showFinalResult, releaseRunMemory, setEditablePdf } from '../app/createApp.js';
 import { getPdfjs } from '../services/pdfService.js';
 import { DEVICE_MEMORY_GB } from '../config/device.js';
 import { beginRun, endRun, updateRunPhase } from '../app/diagnostics.js';
+import { syncBoxEditor, resetBoxEditor, isReprocessing } from '../presentation/boxEditor.js';
 
 /**
  * Guardia anti-concorrenza: evita che due elaborazioni partano in
@@ -93,6 +94,11 @@ async function processFile(f) {
     error.classList.remove('hidden');
     return;
   }
+  if (isReprocessing()) {
+    errorMsg.textContent = 'The highlight editor is re-processing: wait for it to finish before uploading another PDF.';
+    error.classList.remove('hidden');
+    return;
+  }
 
   if (!f.name.toLowerCase().endsWith('.pdf')) {
     errorMsg.textContent = 'The file is not a valid PDF.';
@@ -119,6 +125,7 @@ async function processFile(f) {
   try {
     setCurrentFile(f);
     resetCropData();
+    resetBoxEditor();
     showLoading('Initializing…');
     console.log(`[UPLOAD] Opening ${f.name} (${(f.size / 1024).toFixed(1)} KB)`);
 
@@ -132,12 +139,16 @@ async function processFile(f) {
     showLoading('Loading AI models…');
     try {
       await processPDF(pdf);
-      try { await pdf.destroy(); } catch (e) { console.warn('[UPLOAD] destroy:', e.message); }
+      // Il documento resta in memoria per la tab "Edit highlights"
+      // (ri-render pagine + rielaborazione con box modificati).
+      setEditablePdf(pdf);
       await showFinalResult();
+      syncBoxEditor();
       completed = true;
     } catch (err) {
       console.error('[PIPELINE] Errore elaborazione:', err);
       try { await pdf.destroy(); } catch (e) { /* noop */ }
+      setEditablePdf(null);
       hideAll();
       errorMsg.textContent = err.message || 'Error during processing.';
       error.classList.remove('hidden');

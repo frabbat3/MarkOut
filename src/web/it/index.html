@@ -144,6 +144,7 @@
           <button class="tab-btn active" data-view="bbox">📄 Bounding Box</button>
           <button class="tab-btn" data-view="crops">✂️ Evidenziazioni</button>
           <button class="tab-btn" data-view="markdown">📝 Markdown</button>
+          <button class="tab-btn" data-view="edit" data-i18n="edit.tab">✏️ Modifica evidenziazioni</button>
           <button class="tab-btn" data-view="yolo">🔲 Frammenti YOLO</button>
           <button class="tab-btn" data-view="rows">📏 Righe YOLO</button>
           <button class="tab-btn" data-view="allrows">🗂️ Tutte le righe Det</button>
@@ -157,6 +158,22 @@
         <div class="row-grid hidden" id="allRowsContainer"></div>
         <pre class="debug-report hidden" id="debugReport"></pre>
         <pre class="markdown-output" id="markdownOutput"></pre>
+
+        <!-- Highlight box editor (edit / re-process the boxes) -->
+        <div class="box-editor hidden" id="boxEditor">
+          <div class="editor-toolbar">
+            <button class="btn btn-sm" id="editPrev" data-i18n="edit.prev">◀ Pagina precedente</button>
+            <span class="editor-page" id="editPageLabel" data-i18n="edit.page">Page 1/1</span>
+            <button class="btn btn-sm" id="editNext" data-i18n="edit.next">Pagina successiva ▶</button>
+            <span class="editor-sep"></span>
+            <button class="btn btn-sm" id="editUndo" data-i18n="edit.undo">↩️ Annulla</button>
+            <button class="btn btn-sm" id="editRedo" data-i18n="edit.redo">↪️ Ripeti</button>
+            <button class="btn btn-sm" id="editDelete" data-i18n="edit.delete">🗑 Elimina selezionato</button>
+            <button class="btn btn-primary btn-sm" id="editConfirm" data-i18n="edit.confirm">✅ Conferma e rielabora</button>
+          </div>
+          <p class="editor-hint" data-i18n="edit.hint">Trascina sulle aree vuote per aggiungere un box · trascina un box per spostarlo · trascina bordi o angoli per ridimensionarlo · Canc elimina il box selezionato · Ctrl+Z / Ctrl+Shift+Z annulla/ripeti · ←/→ cambiano pagina. Poi conferma per rielaborare l'intera pipeline con i tuoi box.</p>
+          <div class="editor-canvas-wrap"><canvas id="editCanvas"></canvas></div>
+        </div>
       </div>
 
       <!-- No highlights -->

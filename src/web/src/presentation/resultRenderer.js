@@ -812,6 +812,13 @@ export function switchView(viewName) {
   if (allRowsView) allRowsView.classList.toggle('hidden', viewName !== 'allrows');
   if (debugReportOut) debugReportOut.classList.toggle('hidden', viewName !== 'report');
 
+  // Tab "Edit highlights" (disponibile anche in produzione)
+  const boxEditorEl = document.getElementById('boxEditor');
+  if (boxEditorEl) boxEditorEl.classList.toggle('hidden', viewName !== 'edit');
+  if (viewName === 'edit') {
+    import('./boxEditor.js').then(m => m.activateBoxEditor());
+  }
+
   // La tab attiva è riflessa nell'URL (?view=…) — deep-link, WIG Navigation & State
   try { history.replaceState(null, '', '?view=' + viewName); } catch { /* noop */ }
 }

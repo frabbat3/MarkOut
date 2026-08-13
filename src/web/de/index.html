@@ -132,6 +132,7 @@
           <button class="tab-btn active" data-view="bbox">📄 Bounding Box</button>
           <button class="tab-btn" data-view="crops">✂️ Highlights</button>
           <button class="tab-btn" data-view="markdown">📝 Markdown</button>
+          <button class="tab-btn" data-view="edit" data-i18n="edit.tab">✏️ Markierungen bearbeiten</button>
           <button class="tab-btn" data-view="yolo">🔲 YOLO Fragments</button>
           <button class="tab-btn" data-view="rows">📏 YOLO Rows</button>
           <button class="tab-btn" data-view="allrows">🗂️ All Det Rows</button>
@@ -145,6 +146,22 @@
         <div class="row-grid hidden" id="allRowsContainer"></div>
         <pre class="debug-report hidden" id="debugReport"></pre>
         <pre class="markdown-output" id="markdownOutput"></pre>
+
+        <!-- Highlight box editor (edit / re-process the boxes) -->
+        <div class="box-editor hidden" id="boxEditor">
+          <div class="editor-toolbar">
+            <button class="btn btn-sm" id="editPrev" data-i18n="edit.prev">◀ Vorherige Seite</button>
+            <span class="editor-page" id="editPageLabel" data-i18n="edit.page">Page 1/1</span>
+            <button class="btn btn-sm" id="editNext" data-i18n="edit.next">Nächste Seite ▶</button>
+            <span class="editor-sep"></span>
+            <button class="btn btn-sm" id="editUndo" data-i18n="edit.undo">↩️ Rückgängig</button>
+            <button class="btn btn-sm" id="editRedo" data-i18n="edit.redo">↪️ Wiederholen</button>
+            <button class="btn btn-sm" id="editDelete" data-i18n="edit.delete">🗑 Auswahl löschen</button>
+            <button class="btn btn-primary btn-sm" id="editConfirm" data-i18n="edit.confirm">✅ Bestätigen & neu verarbeiten</button>
+          </div>
+          <p class="editor-hint" data-i18n="edit.hint">Auf leere Bereiche ziehen, um einen Kasten hinzuzufügen · Kasten ziehen, um ihn zu verschieben · Ränder oder Ecken ziehen, um die Größe zu ändern · Entf löscht die Auswahl · Strg+Z / Strg+Umschalt+Z rückgängig/wiederholen · ←/→ Seitenwechsel. Dann bestätigen, um die gesamte Pipeline mit deinen Kästen neu auszuführen.</p>
+          <div class="editor-canvas-wrap"><canvas id="editCanvas"></canvas></div>
+        </div>
       </div>
 
       <div class="no-highlights hidden" id="noHighlights">

@@ -878,3 +878,27 @@ html[data-theme="dark"] .accel-cpu {
   color: #fff3e0;
   border-color: #f57c00;
 }
+
+/* ─── Highlight box editor (tab "Edit highlights") ─── */
+.box-editor { margin-top: 16px; }
+.editor-toolbar {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-bottom: 8px;
+}
+.editor-page { font-weight: 600; min-width: 80px; text-align: center; white-space: nowrap; }
+.editor-sep { flex: 1; }
+.editor-hint { font-size: 0.85rem; color: var(--text2); margin: 0 0 8px; }
+.editor-canvas-wrap {
+  overflow: auto;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 8px;
+}
+#editCanvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  cursor: crosshair;
+  border-radius: 4px;
+}

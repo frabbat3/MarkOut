@@ -107,6 +107,12 @@ order with split words and hyphens repaired.
 Lines the OCR could not read are flagged and listed in the *Extraction
 notes* section instead of being silently dropped.
 
+Not happy with a detection? Open the **✏️ Edit highlights** tab: browse
+all pages with the YOLO boxes overlaid, resize/move/delete them or draw
+new ones, then hit **Confirm & re-process** — the whole pipeline
+(layout → crops → OCR → Markdown) runs again using your boxes instead
+of the automatic detection.
+
 ## Features
 
 | | |
@@ -116,6 +122,7 @@ notes* section instead of being silently dropped.
 | **OCR in the browser** | PP-OCRv6 recognition, WebGPU (desktop) / WASM (mobile), self-hosted models |
 | **Ready-to-use text** | Sections exported as single merged blocks, YAML front-matter, page/section headers |
 | **Text healing** | Split-word reconstruction, hyphen re-attach, glued-word split (dictionaries for ~30 languages + n-gram models) |
+| **Box editor** | Review, resize, move, delete and draw highlight boxes on the PDF, then re-run the whole pipeline with your corrections (Ctrl+Z/Ctrl+Shift+Z undo/redo, Del, ←/→ pages) |
 | **Quality flags** | Unreadable lines are flagged and listed in an *Extraction notes* section |
 | **Multi-language UI** | English, Deutsch, Español, Français, Italiano, Português |
 | **Debug report** | One-click text report of the whole pipeline (YOLO boxes, detections, regions, OCR status) |
