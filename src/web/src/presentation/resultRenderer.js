@@ -32,7 +32,7 @@ export async function showResult(currentFile, cropData, pageData) {
     resultMeta.textContent = `${cropData.length} fragments · ${pages.size} pages — ${currentFile?.name || ''}`;
   }
   if (markdownOut) {
-    markdownOut.textContent = await buildMarkdown(cropData, currentFile?.name || '');
+    markdownOut.value = await buildMarkdown(cropData, currentFile?.name || '');
   }
 
   // Schede debug (bbox, crops, yolo, rows, report) — attive solo in modalità DEBUG
@@ -792,10 +792,16 @@ function renderAllRows(pageData) {
 /**
  * Cambia la view attiva tra le tab.
  *
- * @param {string} viewName — 'bbox' | 'crops' | 'markdown' | 'yolo' | 'rows'
+ * @param {string} viewName — 'bbox' | 'crops' | 'markdown' | 'edit' | 'yolo' | 'rows'
  */
 export function switchView(viewName) {
-  tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+  tabBtns.forEach(btn => {
+    const active = btn.dataset.view === viewName;
+    btn.classList.toggle('active', active);
+    // ARIA tabs pattern (WIG Accessibility)
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    btn.tabIndex = active ? 0 : -1;
+  });
   const pdfViewer = document.getElementById('pdfViewer');
   const cropContainer = document.getElementById('cropContainer');
   const markdownOut = document.getElementById('markdownOutput');
@@ -824,13 +830,36 @@ export function switchView(viewName) {
 }
 
 /**
- * Inizializza i tab.
+ * Inizializza i tab (pattern ARIA tabs: frecce ←/→ per navigare).
  */
 export function initTabs() {
   tabBtns = viewTabs?.querySelectorAll('.tab-btn') ?? [];
+  viewTabs?.setAttribute('role', 'tablist');
+  tabBtns.forEach(btn => {
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false');
+    btn.tabIndex = btn.classList.contains('active') ? 0 : -1;
+  });
+
   viewTabs?.addEventListener('click', e => {
     const btn = e.target.closest('.tab-btn');
     if (btn?.dataset.view) switchView(btn.dataset.view);
+  });
+
+  // Navigazione da tastiera tra le tab visibili (WIG Accessibility)
+  viewTabs?.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return;
+    const visible = [...tabBtns].filter(b => !b.classList.contains('hidden'));
+    if (!visible.length) return;
+    const cur = visible.indexOf(document.activeElement);
+    let next;
+    if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = visible.length - 1;
+    else if (cur === -1) next = 0;
+    else next = (cur + (e.key === 'ArrowRight' ? 1 : -1) + visible.length) % visible.length;
+    e.preventDefault();
+    visible[next].focus();
+    switchView(visible[next].dataset.view);
   });
 
   // Deep-link: ripristina la tab dall'URL (?view=markdown) — WIG Navigation & State

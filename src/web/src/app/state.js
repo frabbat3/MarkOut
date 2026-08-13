@@ -31,6 +31,25 @@ export function resetEditorPages() {
   editorPages = [];
 }
 
+/**
+ * Aggiorna (o inserisce) la baseline editor di una pagina, mantenendo
+ * l'array ordinato per numero di pagina. Usato dal re-process parziale.
+ * @param {{pageNum:number,w:number,h:number,boxes:Array}} ep
+ */
+export function upsertEditorPage(ep) {
+  editorPages = editorPages.filter(p => p.pageNum !== ep.pageNum);
+  editorPages.push(ep);
+  editorPages.sort((a, b) => a.pageNum - b.pageNum);
+}
+
+/**
+ * Rimuove da pageData le pagine indicate (re-process parziale in DEBUG).
+ * @param {Set<number>} pages
+ */
+export function removePageDataFor(pages) {
+  pageData = pageData.filter(pd => !pages.has(pd.pageNum));
+}
+
 /** @type {Object} info di sessione raccolta durante la pipeline (per il report debug) */
 export const session = {};
 

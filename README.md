@@ -38,6 +38,7 @@ use it right now, no download or installation required.
 
 - [How it works](#how-it-works)
 - [What the output looks like](#what-the-output-looks-like)
+- [Editing highlights](#-editing-highlights)
 - [Features](#features)
 - [Codebase map](#codebase-map)
 - [Technologies & credits](#technologies--credits)
@@ -107,11 +108,34 @@ order with split words and hyphens repaired.
 Lines the OCR could not read are flagged and listed in the *Extraction
 notes* section instead of being silently dropped.
 
-Not happy with a detection? Open the **✏️ Edit highlights** tab: browse
+Not happy with a detection? Open the **Edit highlights** tab: browse
 all pages with the YOLO boxes overlaid, resize/move/delete them or draw
-new ones, then hit **Confirm & re-process** — the whole pipeline
-(layout → crops → OCR → Markdown) runs again using your boxes instead
-of the automatic detection.
+new ones, then hit **Confirm & re-process** — the pipeline (layout →
+crops → OCR → Markdown) runs again using your boxes, **only on the
+pages you changed**. See [Editing highlights](#-editing-highlights) for
+the full workflow.
+
+## ✏️ Editing highlights
+
+In the **Edit highlights** tab you can review and fix every detected
+box before the final extraction:
+
+| Action | How |
+| :--- | :--- |
+| **Browse pages** | All pages are stacked and scrollable with the mouse wheel; the ◀ ▶ buttons, ←/→ or PgUp/PgDn jump between pages |
+| **Add a box** | Click **Add box**, then click once on the page to set the first corner and click again to close the rectangle — no dragging needed, Esc cancels |
+| **Move / resize** | Drag a box to move it; drag its edges or corner handles to resize (the cursor changes only when over a box) |
+| **Delete** | Select a box and press Del/Backspace |
+| **Re-detect** | Runs YOLO again on the current page and replaces its boxes (undoable with Ctrl+Z) |
+| **Zoom** | ➖/➕/Fit buttons, Ctrl + mouse wheel, or Ctrl+/Ctrl−/Ctrl+0 |
+| **Re-process** | **Confirm & re-process** re-runs the pipeline (layout → crops → OCR → Markdown) **only on the pages you changed** — a double click is required to arm the action |
+
+Keyboard shortcuts: **Ctrl+Z** undo · **Ctrl+Shift+Z / Ctrl+Y** redo ·
+**Del/Backspace** delete · **Esc** deselect/cancel · **←/→** previous/next
+page (with a box selected they nudge it by 1 px, Shift = 10 px).
+
+The **Markdown output is editable too**: fix OCR mistakes directly in
+the text area — Copy and Download always export your edited version.
 
 ## Features
 
@@ -122,7 +146,8 @@ of the automatic detection.
 | **OCR in the browser** | PP-OCRv6 recognition, WebGPU (desktop) / WASM (mobile), self-hosted models |
 | **Ready-to-use text** | Sections exported as single merged blocks, YAML front-matter, page/section headers |
 | **Text healing** | Split-word reconstruction, hyphen re-attach, glued-word split (dictionaries for ~30 languages + n-gram models) |
-| **Box editor** | Review, resize, move, delete and draw highlight boxes on the PDF, then re-run the whole pipeline with your corrections (Ctrl+Z/Ctrl+Shift+Z undo/redo, Del, ←/→ pages) |
+| **Box editor** | Review every YOLO box on the PDF: move, resize, delete, draw new boxes, re-detect a page and zoom; then re-process only the pages you changed (Ctrl+Z/Ctrl+Shift+Z undo/redo, Del, ←/→ pages) |
+| **Editable Markdown** | Fix OCR mistakes directly in the result: the text area is keyboard-editable and Copy/Download export your edited version |
 | **Quality flags** | Unreadable lines are flagged and listed in an *Extraction notes* section |
 | **Multi-language UI** | English, Deutsch, Español, Français, Italiano, Português |
 | **Debug report** | One-click text report of the whole pipeline (YOLO boxes, detections, regions, OCR status) |
@@ -144,7 +169,7 @@ src/web/                          — the web app (Vite, vanilla JS)
     ├── domain/                   — layout (gapTree, columns, clusterHighlights),
     │                               OCR crops, text healing (wordGlue,
     │                               highlightLinking), geometry
-    └── presentation/             — markdownExporter, resultRenderer, debugReport
+    └── presentation/             — markdownExporter, resultRenderer, debugReport, boxEditor
 
 src/editor/                       — local tool to review/edit highlight boxes
 src/train/                        — YOLO training notebooks

@@ -54,18 +54,22 @@ export async function initI18n() {
   const locale = getLocale();
   document.documentElement.lang = locale;
 
-  if (!document.querySelector('[data-i18n]')) return;
+  if (!document.querySelector('[data-i18n], [data-i18n-attr]')) return;
   try {
     const res = await fetch(dictUrl(locale), { cache: 'no-cache' });
     if (!res.ok) return;
     const dict = await res.json();
     _dict = dict;
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const val = dict[el.dataset.i18n];
-      if (typeof val === 'string') el.innerHTML = val;
-      // data-i18n-attr="aria-label" → traduce anche l'attributo (stessa key)
+    document.querySelectorAll('[data-i18n], [data-i18n-attr]').forEach(el => {
+      const key = el.dataset.i18n || el.dataset.i18nAttr;
+      const val = dict[key];
+      if (typeof val !== 'string') return;
+      // innerHTML solo se l'elemento è esso stesso la traduzione;
+      // se il testo tradotto vive in un <span> figlio (icone SVG inline
+      // nel contenitore), qui si aggiorna solo l'attributo.
+      if (el.dataset.i18n) el.innerHTML = val;
       const attr = el.dataset.i18nAttr;
-      if (attr && typeof val === 'string') el.setAttribute(attr, val);
+      if (attr) el.setAttribute(attr, val);
     });
   } catch { /* fallback: testo hardcoded */ }
 }

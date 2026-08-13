@@ -188,7 +188,7 @@ Avvia il server di sviluppo **senza** elementi di debug:
 ```
 
 Viene avviato Vite su `http://localhost:8080`.  
-Nell'interfaccia saranno visibili le tab **Markdown** ed **✏️ Edit highlights** (editor dei box: ridimensiona/sposta/elimina/disegna i box YOLO e rielabora la pipeline con **Confirm & re-process**; Ctrl+Z/Ctrl+Shift+Z, Canc, ←/→) e i pulsanti **Copia** / **Scarica .md**.
+Nell'interfaccia saranno visibili le tab **Markdown** (textarea editabile con la tastiera: Copia/Scarica esportano il testo modificato) ed **Edit highlights** (editor dei box: sposta/ridimensiona/elimina, aggiungi con click-to-click, re-detect e zoom; **Confirm & re-process** rielabora solo le pagine modificate) e i pulsanti **Copia** / **Scarica .md**.
 
 ### Modalità debug
 

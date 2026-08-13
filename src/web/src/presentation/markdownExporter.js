@@ -18,7 +18,7 @@
  *  - flag di qualità inline: ⚠️ [no text] = riga non riconosciuta
  *  - sezione "Extraction notes" finale con le anomalie per riga
  */
-import { copyBtn, downloadBtn, fmtDate } from './dom.js';
+import { copyBtn, downloadBtn, fmtDate, markdownOut } from './dom.js';
 import { linkHighlightLines } from '../domain/highlightLinking.js';
 import { makeCtx, healText } from '../domain/wordGlue.js';
 import { editDistance } from '../domain/ocr/rowAssist.js';
@@ -311,20 +311,37 @@ export async function buildMarkdown(crops, fileName) {
  * Inizializza i listener per copia e download Markdown.
  */
 export function initMarkdownExport() {
+  /** Etichetta del pulsante senza cancellare l'icona SVG (span i18n). */
+  const setCopyLabel = (text) => {
+    const span = copyBtn?.querySelector('[data-i18n]');
+    if (span) span.textContent = text;
+    else if (copyBtn) copyBtn.textContent = text;
+  };
+
+  /**
+   * Testo Markdown corrente: quello (eventualmente editato a tastiera)
+   * nella textarea; se vuoto, rigenera dai dati della pipeline.
+   */
+  const getEditedMarkdown = async () => {
+    if (markdownOut && markdownOut.value.trim()) return markdownOut.value;
+    const { currentFile, cropData } = await import('../app/state.js');
+    return buildMarkdown(cropData, currentFile?.name || '');
+  };
+
   copyBtn.addEventListener('click', async () => {
     const state = await import('../app/state.js');
     const { currentFile, cropData } = state;
     if (!currentFile || !cropData.length) return;
-    const txt = await buildMarkdown(cropData, currentFile.name);
+    const txt = await getEditedMarkdown();
     const ok = await copyText(txt);
-    copyBtn.textContent = ok ? '✅ Copied!' : '❌ Copy failed';
-    setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 2000);
+    setCopyLabel(ok ? 'Copied!' : 'Copy failed');
+    setTimeout(() => setCopyLabel('Copy'), 2000);
   });
 
   downloadBtn.addEventListener('click', async () => {
     const { currentFile, cropData } = await import('../app/state.js');
     if (!currentFile || !cropData.length) return;
-    const txt = await buildMarkdown(cropData, currentFile.name);
+    const txt = await getEditedMarkdown();
     const blob = new Blob([txt], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

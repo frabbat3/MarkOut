@@ -393,11 +393,20 @@ html[data-theme="dark"] .icon-moon { display: inline; }
   border-color: var(--accent);
 }
 .markdown-output {
-  padding: 28px 32px; font-family: 'SF Mono','Fira Code','Cascadia Code',monospace;
+  display: block;
+  width: 100%;
+  min-height: 420px;
+  padding: 28px 32px;
+  font-family: 'SF Mono','Fira Code','Cascadia Code',monospace;
   font-size: 0.9rem; line-height: 1.7; color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
   white-space: pre-wrap; word-wrap: break-word; overflow-x: auto;
-  max-height: 500px; overflow-y: auto;
+  max-height: 560px; overflow-y: auto;
+  resize: vertical;
 }
+.markdown-output:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 /* ─── View tabs ─── */
 .view-tabs {
@@ -882,23 +891,183 @@ html[data-theme="dark"] .accel-cpu {
 /* ─── Highlight box editor (tab "Edit highlights") ─── */
 .box-editor { margin-top: 16px; }
 .editor-toolbar {
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-  margin-bottom: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
 }
-.editor-page { font-weight: 600; min-width: 80px; text-align: center; white-space: nowrap; }
-.editor-sep { flex: 1; }
-.editor-hint { font-size: 0.85rem; color: var(--text2); margin: 0 0 8px; }
+.editor-toolbar-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.editor-toolbar-row + .editor-toolbar-row {
+  border-top: 1px solid var(--border2);
+  padding-top: 8px;
+}
+.editor-group { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.editor-sep { flex: 1; min-width: 8px; }
+
+/* Pulsanti editor: stesso linguaggio del sito (.btn-sm light con bordo) */
+.editor-btn {
+  height: 34px;
+  padding: 0 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 0.85rem; font-weight: 500; white-space: nowrap;
+  background: var(--btn-light-bg);
+  color: var(--btn-light-text);
+  border: 1px solid var(--btn-light-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.editor-btn:hover {
+  background: var(--btn-light-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.editor-btn:active { box-shadow: none; transform: translateY(1px); }
+.editor-icon { width: 36px; padding: 0; font-size: 0.95rem; }
+.editor-btn-primary { height: 34px; padding: 0 20px; font-weight: 600; }
+
+/* Pill informative (pagina, zoom %): pill del sito (accel-switch) */
+.editor-pill {
+  height: 34px;
+  min-width: 78px;
+  padding: 0 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--btn-light-bg);
+  color: var(--btn-light-text);
+  border: 1px solid var(--btn-light-border);
+  border-radius: 999px;
+  font-size: 0.85rem; font-weight: 600; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.editor-zoom { min-width: 56px; padding: 0 8px; }
+.editor-hint { font-size: 0.85rem; color: var(--text2); margin: 0 0 10px; }
+/* Scroll container: pagine impilate, scroll libero con la rotella */
 .editor-canvas-wrap {
   overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--border2);
   border-radius: 8px;
   background: var(--card);
   padding: 8px;
+  max-height: 72vh;
 }
-#editCanvas {
+.editor-page-wrap {
+  position: relative;
+  width: 100%; /* scala con lo zoom (setZoom imposta width%) */
+  margin-bottom: 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--canvas-bg, #fff);
+}
+.editor-page-label {
+  position: absolute;
+  top: 6px; left: 8px;
+  z-index: 3;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+.editor-page-base {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
   display: block;
-  max-width: 100%;
-  height: auto;
-  cursor: crosshair;
-  border-radius: 4px;
 }
+.editor-page-ov {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  cursor: default; /* il cursore cambia SOLO sui box (JS) */
+  border-radius: 6px;
+  /* Drag personalizzato: niente scroll/zoom/selection nativi (WIG Touch) */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Focus visibile dentro lo scroll container (WIG Focus States) */
+.editor-page-ov:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -3px;
+}
+
+/* Pulsanti disabilitati (WIG Hover & Interactive States) */
+.btn:disabled, .btn:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Azione distruttiva (elimina box) — stessa forma, tinta di pericolo */
+.editor-danger {
+  background: var(--btn-light-bg);
+  color: #d93025;
+  border-color: rgba(217, 48, 37, 0.4);
+}
+.editor-danger:hover {
+  background: #fce8e6;
+  border-color: #d93025;
+  color: #b3261e;
+}
+html[data-theme="dark"] .editor-danger { color: #ff8a80; border-color: rgba(255, 138, 128, 0.45); }
+html[data-theme="dark"] .editor-danger:hover { background: rgba(217, 48, 37, 0.15); color: #ffa49c; }
+
+/* Conferma a due passi armata (azione distruttiva, WIG Navigation & State) */
+#editConfirm.armed {
+  background: #f9ab00;
+  color: #202124;
+  border: 1px solid #e37400;
+}
+#editConfirm.armed:hover { box-shadow: 0 6px 16px rgba(249, 171, 0, 0.4); }
+@media (prefers-reduced-motion: no-preference) {
+  #editConfirm.armed { animation: editConfirmPulse 1.1s ease-in-out infinite; }
+}
+@keyframes editConfirmPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249, 171, 0, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(249, 171, 0, 0); }
+}
+
+/* Utility screen-reader-only (WIG Accessibility) */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Icone SVG inline (al posto delle emoji) ─── */
+.tab-btn svg { width: 15px; height: 15px; vertical-align: -2px; margin-right: 6px; flex-shrink: 0; }
+.btn svg, .editor-btn svg, .gh-star-btn svg { width: 15px; height: 15px; vertical-align: -2px; flex-shrink: 0; }
+.editor-icon svg { width: 16px; height: 16px; vertical-align: 0; }
+.theme-toggle svg { width: 17px; height: 17px; display: block; }
+.upload-icon svg { width: 34px; height: 34px; display: block; margin: 0 auto; }
+a[data-i18n="footer.starRepo"] svg { width: 14px; height: 14px; vertical-align: -2px; }
+
+/* Azioni principali a destra (re-detect + confirm, stessa larghezza) */
+.editor-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.editor-actions button { white-space: nowrap; }
+
+/* Pulsante "Add box" attivo (modalità di disegno) */
+#editAddBox[aria-pressed="true"] {
+  background: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand);
+}
+#editAddBox[aria-pressed="true"]:hover {
+  background: var(--brand);
+  box-shadow: 0 4px 14px rgba(26, 115, 232, 0.35);
+}
+html[data-theme="dark"] #editAddBox[aria-pressed="true"] { color: #0f1117; }

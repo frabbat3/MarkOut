@@ -15,7 +15,7 @@ import { extractCropCanvas, extractDeskewedCropCanvas, downscaleForOcr } from '.
 import {
   currentFile, cropData, pageData,
   setCropData, resetCropData, resetPageData, addPageData,
-  addEditorPage, resetEditorPages,
+  addEditorPage, resetEditorPages, upsertEditorPage, removePageDataFor,
 } from './state.js';
 import { showResult, switchView } from '../presentation/resultRenderer.js';
 import { setProgress, showLoading, hideAll, getSelectedLang, updateAcceleratorBadge } from '../presentation/dom.js';
@@ -50,6 +50,67 @@ export function setEditablePdf(pdf) {
  */
 export function getEditablePdf() {
   return _editablePdf;
+}
+
+/**
+ * Re-process parziale: rielabora SOLO le pagine modificate dall'editor
+ * (layout + crop + OCR), e fonde i nuovi frammenti con quelli delle
+ * pagine intatte. Molto più veloce del re-run completo.
+ *
+ * @param {PDFDocumentProxy} pdf
+ * @param {Object<number, Array>} editedBoxes — box per le sole pagine modificate
+ * @param {Set<number>} onlyPages — numeri di pagina da rielaborare
+ */
+export async function reprocessPages(pdf, editedBoxes, onlyPages) {
+  const dirty = [...onlyPages].sort((a, b) => a - b);
+  if (!dirty.length) return;
+  console.log(`[EDITOR] Re-processing pages: ${dirty.join(',')}`);
+
+  // 1) Rimuovi i frammenti delle pagine da rielaborare (canvas inclusi)
+  for (const f of cropData) {
+    if (onlyPages.has(f.page)) {
+      releaseCanvas(f.canvas);
+      delete f.canvas;
+      releaseCanvas(f.rowCanvas);
+      delete f.rowCanvas;
+    }
+  }
+  setCropData(cropData.filter(f => !onlyPages.has(f.page)));
+  removePageDataFor(onlyPages); // DEBUG: tab ispezione
+
+  // 2) Layout + crop per le pagine modificate (box dell'utente, niente YOLO)
+  const newFragments = [];
+  for (const p of dirty) {
+    const label = `Page ${p} — layout & crops…`;
+    setProgress(label, 0, 1, [10, 90]);
+    await yieldToBrowser();
+    const r = await processPage(pdf, p, editedBoxes[p]);
+    newFragments.push(...r.fragments);
+    upsertEditorPage(r.editorPage);
+  }
+
+  // 3) Fonde i frammenti (ordine stabile per pagina)
+  setCropData([...cropData, ...newFragments].sort((a, b) => a.page - b.page));
+
+  // 4) OCR dei soli frammenti nuovi
+  if (newFragments.length) {
+    setProgress('⏳ Loading OCR model…', 0, 1, [90, 90]);
+    await yieldToBrowser();
+    await initPaddleOCR(getSelectedLang());
+    await runOcrOnFragments(newFragments, (step, current, total) => {
+      setProgress(step, current, total, [90, 100]);
+    });
+    await releasePaddleOCR();
+    // Rilascia i canvas dei nuovi frammenti (produzione)
+    if (!DEBUG) {
+      for (const f of newFragments) {
+        releaseCanvas(f.canvas);
+        delete f.canvas;
+        releaseCanvas(f.rowCanvas);
+        delete f.rowCanvas;
+      }
+    }
+  }
 }
 
 /**
@@ -170,8 +231,8 @@ async function neuralPipeline(pdf, totalPages, editedBoxes) {
   for (let p = 1; p <= totalPages; p++) {
     const pctLo = 5, pctHi = 60;
     const label = editedBoxes
-      ? `📄 Page ${p}/${totalPages} — layout & crops…`
-      : `📄 Page ${p}/${totalPages} — detecting highlights…`;
+      ? `Page ${p}/${totalPages} — layout & crops…`
+      : `Page ${p}/${totalPages} — detecting highlights…`;
     setProgress(label, p, totalPages, [pctLo, pctHi]);
     const r = await processPage(pdf, p, editedBoxes ? editedBoxes[p] : undefined);
     addEditorPage(r.editorPage);
@@ -250,8 +311,8 @@ async function neuralPipelineMobile(pdf, totalPages, editedBoxes) {
     // ── YOLO + layout + crop (questa pagina) ──
     updateRunPhase('yolo', `page ${p}/${totalPages}`);
     const label = editedBoxes
-      ? `📄 Page ${p}/${totalPages} — layout & crops…`
-      : `📄 Page ${p}/${totalPages} — detecting highlights…`;
+      ? `Page ${p}/${totalPages} — layout & crops…`
+      : `Page ${p}/${totalPages} — detecting highlights…`;
     setProgress(label, p, totalPages, [pctLo, pctHi]);
     await yieldToBrowser();
     const r = await processPage(pdf, p, editedBoxes ? editedBoxes[p] : undefined);
