@@ -14,7 +14,9 @@ outlines how to contribute, report issues, and get involved.
   status) and makes bugs much easier to reproduce.
 - **Feature requests** — open an issue with the
   [feature request template](.github/ISSUE_TEMPLATE/feature_request.md).
-- **Translations** — see [TRANSLATION.md](TRANSLATION.md).
+- **Translations** — the site ships in 6 languages
+  (`src/web/public/locales/` + static page copies); open an issue or a PR
+  to add your language.
 - **Code contributions** — submit a pull request with the
   [PR template](.github/pull_request_template.md).
 - **Documentation** — improve the README, the codebase map or the guides.

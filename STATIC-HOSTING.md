@@ -68,5 +68,4 @@ VITE_DEBUG=true npm run build
 - **Cache busting:** Vite fingerprints the JS bundles; the models are
   fetched once and cached by the browser.
 - **Language copies:** the multi-page build also emits the translated site
-  pages (`de/`, `es/`, `fr/`, `it/`, `pt/`) — see
-  [TRANSLATION.md](TRANSLATION.md).
+  pages (`de/`, `es/`, `fr/`, `it/`, `pt/`).

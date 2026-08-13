@@ -183,6 +183,23 @@ regions) and a one-click *Debug report* of the whole pipeline:
 VITE_DEBUG=true npm run dev -- --port 8080 --host
 ```
 
+### GPU acceleration
+
+The app shows a **GPU acceleration** toggle (desktop only, when the browser
+supports WebGPU and the device has more than 4 GB of RAM):
+
+- **ON (default)** — YOLO detection and OCR run on the **WebGPU backend**
+  of ONNX Runtime: inference is much faster.
+- **OFF** — everything runs on the **WASM backend** (CPU). The pipeline,
+  the models and the output quality are *identical* — only the execution
+  backend changes. It is slower but extremely stable.
+
+Turn it **off** if WebGPU crashes, freezes or misbehaves on your device
+(driver/GPU-specific issues). The choice is saved in your browser
+(`localStorage`) and the app never changes the backend automatically.
+On mobile and on low-memory desktops (≤ 4 GB RAM) the toggle is hidden:
+WASM is always used there, and WebGPU is never enabled.
+
 **Build & host** — the app is 100% static: `npm run build` produces
 `src/web/dist/`, which any static host can serve. Pushes to `main` are
 deployed automatically to GitHub Pages (models are self-hosted, no external
